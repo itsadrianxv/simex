@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "venue": {
+    "name": "simex",
+    "timezone": "Asia/Shanghai",
+    "order_id_scope": "venue_process",
+    "market_data_sequence_scope": "venue",
+    "client_order_id_scope": "participant_live_orders"
+  },
+  "replay": {
+    "trace_format": "utf8_json",
+    "json_library": "nlohmann_json",
+    "cross_stream_order": false
+  },
+  "instrument": {
+    "symbol": "RB",
+    "profile": "shfe_rb_demo",
+    "exchange": "SHFE",
+    "contract_size_tons": 10,
+    "quantity_unit": "lot",
+    "quote_unit": "CNY_PER_TON",
+    "tick_size": 1,
+    "price_representation": "integer_ticks",
+    "price_index": {
+      "base": "LOWER_DAILY_PRICE_LIMIT",
+      "out_of_range": "REJECT"
+    },
+    "max_price_levels": 4096,
+    "price_limit": {
+      "basis": "PREVIOUS_SETTLEMENT",
+      "absolute_percent": 0.03,
+      "missing_reference": "REJECT"
+    }
+  },
+  "trading_day": {
+    "night_session_belongs_to": "FOLLOWING_TRADING_DAY",
+    "calendar_source": "EXPLICIT_SCHEDULE_INPUT",
+    "rollover": "EXPLICIT_VIRTUAL_CLOCK_EVENT"
+  },
+  "session_template": {
+    "interval_semantics": "[start,end)",
+    "night": [
+      {
+        "phase": "AUCTION_SUBMIT",
+        "start": "20:55",
+        "end": "20:59"
+      },
+      {
+        "phase": "AUCTION_MATCH",
+        "start": "20:59",
+        "end": "21:00"
+      },
+      {
+        "phase": "CONTINUOUS",
+        "start": "21:00",
+        "end": "23:00"
+      }
+    ],
+    "overnight_closed": {
+      "phase": "CLOSED",
+      "start": "23:00",
+      "end": "08:55",
+      "crosses_midnight": true
+    },
+    "day": [
+      {
+        "phase": "AUCTION_SUBMIT",
+        "start": "08:55",
+        "end": "08:59"
+      },
+      {
+        "phase": "AUCTION_MATCH",
+        "start": "08:59",
+        "end": "09:00"
+      },
+      {
+        "phase": "CONTINUOUS",
+        "start": "09:00",
+        "end": "10:15"
+      },
+      {
+        "phase": "BREAK",
+        "start": "10:15",
+        "end": "10:30"
+      },
+      {
+        "phase": "CONTINUOUS",
+        "start": "10:30",
+        "end": "11:30"
+      },
+      {
+        "phase": "BREAK",
+        "start": "11:30",
+        "end": "13:30"
+      },
+      {
+        "phase": "CONTINUOUS",
+        "start": "13:30",
+        "end": "15:00"
+      },
+      {
+        "phase": "CLOSED",
+        "start": "15:00",
+        "end": "20:55"
+      }
+    ],
+    "daily_close": {
+      "at": "15:00",
+      "cancel_live_orders": true,
+      "release_frozen_quantity": true,
+      "retain_positions_until": "TRADING_DAY_ROLLOVER"
+    }
+  },
+  "orders": {
+    "supported_combinations": [
+      {
+        "order_type": "LIMIT",
+        "time_in_force": "DAY"
+      },
+      {
+        "order_type": "LIMIT",
+        "time_in_force": "IOC"
+      },
+      {
+        "order_type": "LIMIT",
+        "time_in_force": "FOK"
+      },
+      {
+        "order_type": "MARKET",
+        "time_in_force": "DAY"
+      }
+    ],
+    "position_effects": [
+      "OPEN",
+      "CLOSE_TODAY",
+      "CLOSE_YESTERDAY"
+    ],
+    "auction_allowed_order_types": [
+      "LIMIT"
+    ],
+    "auction_allowed_time_in_force": [
+      "DAY"
+    ],
+    "continuous_allowed_order_types": [
+      "LIMIT",
+      "MARKET"
+    ],
+    "continuous_allowed_time_in_force": [
+      "DAY",
+      "IOC",
+      "FOK"
+    ],
+    "market_remainder": "CANCEL",
+    "market_empty_book": "CANCEL",
+    "duplicate_live_client_order_id": "REJECT",
+    "cancel_owner": "ORIGINAL_PARTICIPANT_ONLY"
+  },
+  "matching": {
+    "priority": [
+      "PRICE",
+      "RX_TIME"
+    ],
+    "continuous_trade_price": "MEDIAN_BUY_SELL_PREVIOUS_TRADE",
+    "first_trade_price_fallback": "PREVIOUS_SETTLEMENT",
+    "fok_preflight": [
+      "PRICE_AND_SESSION_VALIDATION",
+      "OPPOSITE_SIDE_LIQUIDITY",
+      "FRONT_CLEARING_AVAILABILITY"
+    ]
+  },
+  "auction": {
+    "price_selection": [
+      "MAX_EXECUTABLE_QUANTITY",
+      "MINIMUM_UNMATCHED_QUANTITY",
+      "CLOSEST_TO_REFERENCE_PRICE",
+      "LOWER_PRICE"
+    ],
+    "match_priority": [
+      "PRICE",
+      "RX_TIME"
+    ],
+    "unmatched_limit_order": "CARRY_TO_CONTINUOUS_WITH_RX_TIME",
+    "matching_window_allows_new_orders": false,
+    "matching_window_allows_cancels": false
+  },
+  "positions": {
+    "account_key": "client_id",
+    "buckets": [
+      "LONG_TODAY",
+      "LONG_YESTERDAY",
+      "SHORT_TODAY",
+      "SHORT_YESTERDAY"
+    ],
+    "subaccounts": false,
+    "insufficient_close_quantity": "REJECT_WHOLE_ORDER"
+  },
+  "reason_codes": [
+    "INVALID_TICK",
+    "INVALID_PRICE",
+    "INVALID_QTY",
+    "PRICE_LIMIT_EXCEEDED",
+    "REFERENCE_PRICE_UNAVAILABLE",
+    "SESSION_CLOSED",
+    "ORDER_TYPE_NOT_ALLOWED",
+    "INSUFFICIENT_CLOSE_TODAY",
+    "INSUFFICIENT_CLOSE_YESTERDAY",
+    "FOK_NOT_FILLED",
+    "DUPLICATE_ORDER_ID",
+    "SESSION_END",
+    "ORDER_NOT_FOUND",
+    "QUEUE_FULL"
+  ]
+}

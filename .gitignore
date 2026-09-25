@@ -1,0 +1,12 @@
+tmp/
+build/
+.env
+.agents/
+AGENTS.md
+docs/agents
+skills-lock.json
+docs/adr
+CONTEXT.md
+!docs/adr/
+!docs/adr/*.md
+!CONTEXT.md
