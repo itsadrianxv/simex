@@ -22,6 +22,8 @@ class TcpOrderGateway final {
   auto start(RequestHandler request_handler, ResponseSource response_source) -> bool;
   auto stop() -> void;
   [[nodiscard]] auto boundPort() const noexcept -> std::uint16_t { return bound_port_; }
+  [[nodiscard]] auto healthy() const noexcept -> bool { return healthy_.load(); }
+  [[nodiscard]] auto peerClosed() const noexcept -> bool { return peer_closed_.load(); }
  private:
   void run();
   Endpoint endpoint_;
@@ -29,6 +31,8 @@ class TcpOrderGateway final {
   RequestHandler request_handler_;
   ResponseSource response_source_;
   std::atomic<bool> stopping_{false};
+  std::atomic<bool> healthy_{true};
+  std::atomic<bool> peer_closed_{false};
   std::thread thread_;
   int listen_fd_ = -1;
 };

@@ -18,6 +18,7 @@ class UdpMarketDataPublisher final {
   // Compatibility overload for the initial header-only snapshot source.
   auto start(UpdateSource updates, LegacySnapshotSource snapshots) -> bool;
   auto stop() -> void;
+  [[nodiscard]] auto healthy() const noexcept -> bool { return healthy_.load(); }
  private:
   void run();
   std::uint16_t port_;
@@ -26,6 +27,7 @@ class UdpMarketDataPublisher final {
   SnapshotSource snapshots_;
   LegacySnapshotSource legacy_snapshots_;
   std::atomic<bool> stopping_{false};
+  std::atomic<bool> healthy_{true};
   std::thread thread_;
   int socket_ = -1;
 };

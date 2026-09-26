@@ -6,6 +6,7 @@
 #include <thread>
 #include <limits>
 #include <vector>
+#include <mutex>
 
 #include "common/lf_queue.h"
 #include "common/types.h"
@@ -63,7 +64,10 @@ class ExchangeRuntime final {
   auto advanceTo(simex::common::Nanos timestamp) -> bool;
   auto advanceBy(simex::common::Nanos delta) -> bool;
   auto requestSnapshot() -> bool;
-  [[nodiscard]] auto snapshot() const -> simex::exchange::Snapshot { return snapshot_synthesizer_.synthesize(); }
+  [[nodiscard]] auto snapshot() const -> simex::exchange::Snapshot {
+    std::lock_guard lock(snapshot_mutex_);
+    return snapshot_synthesizer_.synthesize();
+  }
 
   [[nodiscard]] auto ready() const noexcept -> bool { return state() == RuntimeState::READY; }
   [[nodiscard]] auto state() const noexcept -> RuntimeState { return state_.load(); }
@@ -84,6 +88,8 @@ class ExchangeRuntime final {
   simex::exchange::ClientResponseQueue responses_;
   simex::exchange::MarketUpdateQueue updates_;
   simex::exchange::SnapshotSynthesizer snapshot_synthesizer_;
+  mutable std::mutex snapshot_mutex_;
+  std::uint64_t market_sequence_ = 0;
   std::atomic<RuntimeState> state_{RuntimeState::CREATED};
   std::atomic<bool> stop_requested_{false};
   std::thread thread_;

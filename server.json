@@ -1,0 +1,11 @@
+{
+  "instrument_config": "simex.json",
+  "reference_price": 3500,
+  "trading_day": 20260926,
+  "client_id": 1,
+  "tcp_port": 19001,
+  "udp_destination_port": 19002,
+  "snapshot_interval_ms": 1000,
+  "queue_capacity": 4096,
+  "max_run_seconds": 28800
+}

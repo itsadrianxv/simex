@@ -90,6 +90,8 @@ target_compile_features(simex_transport PUBLIC cxx_std_20)
 target_link_libraries(simex_transport PUBLIC simex_warnings)
 
 add_executable(simex_demo src/main.cpp)
+add_executable(simex_server src/server_main.cpp)
+target_link_libraries(simex_server PRIVATE simex_transport)
 target_link_libraries(simex_demo PRIVATE simex_exchange simex_trace)
 target_compile_features(simex_demo PRIVATE cxx_std_20)
 target_link_libraries(simex_demo PRIVATE simex_warnings)

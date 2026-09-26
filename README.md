@@ -1,40 +1,17 @@
 # simex
 
-Simex is a C++ simulated exchange with an SHFE-style RB futures profile. The
-first vertical slice keeps the Chapter 12 component boundaries and provides:
+simex is short for SIMulated EXchange. It's a C++ trading exchange-side program with an SHFE-style RB futures profile.
 
-- deterministic virtual time, session-calendar phase events, and trading-day rollover;
-- RB auction and continuous price-time matching with price limits;
-- today/yesterday thin front clearing and daily-close cancellation;
-- direct `FIFOSequencer`/queue/`MatchingEngine` participant harness;
-- a dedicated `ExchangeRuntime` thread with manual/replay/realtime clock modes;
-- localhost TCP order gateway and UDP incremental/snapshot market data transport;
-- venue-sequenced in-memory incremental market data and independent snapshots;
-- UTF-8 JSON replay traces with a final SHA-256 state hash.
+## Quick Start
 
-The root [`simex.json`](simex.json) is the default profile. Official SHFE facts
-and simulator-specific choices are documented in
-[`docs/shfe/official-rules.md`](docs/shfe/official-rules.md).
+### Prerequisites
 
-## Build
+- A C++20 compiler (GCC or Clang)
+- CMake 3.25+ and Ninja
+- OpenSSL (Crypto)
+- nlohmann_json, or opt into the pinned source fallback with `SIMEX_FETCH_NLOHMANN_JSON=ON`
 
-The build prefers a system `nlohmann_json` package and requires system OpenSSL.
-If the JSON package is unavailable, opt into the pinned source fallback:
-
-```sh
-cmake -S . -B build -DSIMEX_FETCH_NLOHMANN_JSON=ON
-cmake --build build
-ctest --test-dir build --output-on-failure
-```
-
-The default keeps the fetch option off and fails during CMake configuration when
-the system JSON package is missing.
-
-Run the deterministic demo with:
-
-```sh
-./build/simex_demo simex.json
-```
+### Building with CMake
 
 For reproducible Ninja builds, use the checked-in CMake presets:
 
@@ -44,5 +21,28 @@ cmake --build --preset ci-gcc
 ctest --preset test-ci-gcc
 ```
 
-The `dev-gcc`, `dev-clang`, `ci-gcc`, `ci-clang`, and `sanitizer` presets provide the
-corresponding local, CI, and sanitizer configurations.
+The `dev-gcc`, `dev-clang`, `ci-gcc`, `ci-clang`, and `sanitizer` presets provide the corresponding local, CI, and sanitizer configurations.
+
+Without presets:
+
+```sh
+cmake -S . -B build -DSIMEX_FETCH_NLOHMANN_JSON=ON
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Run the deterministic demo with:
+
+```sh
+./build/ci-gcc/simex_demo simex.json
+```
+
+## Note
+
+For the standalone localhost TCP/UDP service used by Jev, see [the transport service guide](docs/jev-transport-service.md). The service starts with an empty book; market-data and counterparty generation are separate work.
+
+I am very, very early in this project. Expect bugs.
+
+## License
+
+MIT

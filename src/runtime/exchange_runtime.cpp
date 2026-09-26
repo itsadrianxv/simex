@@ -29,7 +29,7 @@ auto ExchangeRuntime::stop() -> void {
   if (current == RuntimeState::CREATED || current == RuntimeState::STOPPED) return;
   stop_requested_.store(true);
   if (thread_.joinable()) thread_.join();
-  state_.store(RuntimeState::STOPPED);
+  if (state() != RuntimeState::FAILED) state_.store(RuntimeState::STOPPED);
 }
 
 auto ExchangeRuntime::submit(const simex::exchange::ClientRequest &request) -> bool {
@@ -69,9 +69,15 @@ auto ExchangeRuntime::initialize() -> bool {
 
 auto ExchangeRuntime::handle(const Command &command) -> bool {
   switch (command.type) {
-    case Command::Type::REQUEST:
-      if (!harness_.submit(command.request)) return false;
+    case Command::Type::REQUEST: {
+      auto request = command.request;
+      if (config_.clock_mode == ClockMode::REALTIME) {
+        if (!advanceRealtime()) return false;
+        request.rx_time = current_time_;
+      }
+      if (!harness_.submit(request)) return false;
       break;
+    }
     case Command::Type::ADVANCE_TO:
       if (!harness_.advanceTo(command.timestamp)) return false;
       current_time_ = command.timestamp;
@@ -99,16 +105,19 @@ auto ExchangeRuntime::advanceRealtime() -> bool {
 
 auto ExchangeRuntime::drainHarnessOutputs() -> void {
   for (auto response : harness_.drainResponses()) {
-    if (!responses_.tryPush(std::move(response))) break;
+    if (!responses_.tryPush(std::move(response))) {
+      throw std::runtime_error("Runtime response queue overflow");
+    }
   }
   for (auto update : harness_.drainUpdates()) {
-    const auto sequence = snapshot_synthesizer_.synthesize().last_incremental_sequence + 1;
-    snapshot_synthesizer_.apply({sequence, update});
-    if (!updates_.tryPush(std::move(update))) break;
+    std::lock_guard lock(snapshot_mutex_);
+    if (!updates_.tryPush(update)) throw std::runtime_error("Runtime market queue overflow");
+    snapshot_synthesizer_.apply({++market_sequence_, update});
   }
 }
 
 auto ExchangeRuntime::run() -> void {
+  try {
   if (!initialize()) {
     state_.store(RuntimeState::FAILED);
     return;
@@ -135,6 +144,10 @@ auto ExchangeRuntime::run() -> void {
     if (!did_work) std::this_thread::sleep_for(config_.realtime_poll);
   }
   drainHarnessOutputs();
+  } catch (...) {
+    state_.store(RuntimeState::FAILED);
+    stop_requested_.store(true);
+  }
 }
 
 }  // namespace simex::runtime

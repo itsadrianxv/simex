@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <type_traits>
-#include "exchange/messages.h"
+#include <bit>
+#include <cstddef>
+#include "../exchange/messages.h"
 namespace simex::transport {
 inline constexpr std::uint16_t kProtocolVersion = 1;
 enum class MessageKind : std::uint8_t { REQUEST = 1, RESPONSE = 2, SNAPSHOT = 3, UPDATE = 4 };
@@ -18,4 +20,12 @@ static_assert(std::is_trivially_copyable_v<WireResponse>);
 static_assert(std::is_trivially_copyable_v<WireUpdate>);
 static_assert(std::is_trivially_copyable_v<WireSnapshotPrefix>);
 static_assert(std::is_trivially_copyable_v<WireSnapshotOrder>);
+// v1 is deliberately a native little-endian, 64-bit Linux ABI.
+static_assert(std::endian::native == std::endian::little && sizeof(void*) == 8);
+static_assert(sizeof(FrameHeader) == 16 && sizeof(WireRequest) == 72);
+static_assert(sizeof(WireResponse) == 72 && sizeof(WireUpdate) == 64);
+static_assert(sizeof(WireSnapshotPrefix) == 24 && sizeof(WireSnapshotOrder) == 56);
+static_assert(offsetof(simex::exchange::ClientRequest, price_ticks) == 32);
+static_assert(offsetof(simex::exchange::ClientResponse, price_ticks) == 40);
+static_assert(offsetof(simex::exchange::MarketUpdate, price_ticks) == 24);
 }  // namespace simex::transport
