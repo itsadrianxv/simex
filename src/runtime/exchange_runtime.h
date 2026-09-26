@@ -12,6 +12,7 @@
 #include "common/types.h"
 #include "exchange/messages.h"
 #include "participant_harness/participant_harness.h"
+#include "participant_simulator/participant_simulator.h"
 #include "market_data/snapshot_synthesizer.h"
 
 namespace simex::runtime {
@@ -41,6 +42,10 @@ struct ExchangeRuntimeConfig final {
   ClockMode clock_mode = ClockMode::MANUAL;
   std::size_t queue_capacity = 4096;
   std::chrono::milliseconds realtime_poll{1};
+  simex::participant::ParticipantSimulatorConfig participant_simulator;
+  /// Optional externally visible client ID, used to reject an overlapping
+  /// internal simulator ID range during initialization.
+  simex::common::ClientId external_client_id = simex::common::INVALID_CLIENT_ID;
 };
 
 struct Command final {
@@ -74,6 +79,10 @@ class ExchangeRuntime final {
   [[nodiscard]] auto responses() noexcept -> simex::exchange::ClientResponseQueue & { return responses_; }
   [[nodiscard]] auto updates() noexcept -> simex::exchange::MarketUpdateQueue & { return updates_; }
   [[nodiscard]] auto commands() noexcept -> simex::common::LFQueue<Command> & { return commands_; }
+  [[nodiscard]] auto simulatorStats() const noexcept -> simex::participant::SimulatorStats {
+    std::lock_guard lock(participant_mutex_);
+    return participant_simulator_.stats();
+  }
 
  private:
   auto run() -> void;
@@ -81,14 +90,18 @@ class ExchangeRuntime final {
   auto handle(const Command &command) -> bool;
   auto drainHarnessOutputs() -> void;
   auto advanceRealtime() -> bool;
+  auto tickParticipantSimulator() -> bool;
+  [[nodiscard]] auto isInternalClient(simex::common::ClientId client_id) const noexcept -> bool;
 
   ExchangeRuntimeConfig config_;
   simex::harness::ParticipantHarness harness_;
+  simex::participant::ParticipantSimulator participant_simulator_;
   simex::common::LFQueue<Command> commands_;
   simex::exchange::ClientResponseQueue responses_;
   simex::exchange::MarketUpdateQueue updates_;
   simex::exchange::SnapshotSynthesizer snapshot_synthesizer_;
   mutable std::mutex snapshot_mutex_;
+  mutable std::mutex participant_mutex_;
   std::uint64_t market_sequence_ = 0;
   std::atomic<RuntimeState> state_{RuntimeState::CREATED};
   std::atomic<bool> stop_requested_{false};

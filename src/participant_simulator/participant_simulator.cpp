@@ -121,14 +121,18 @@ auto ParticipantSimulator::setReferencePrice(simex::common::PriceTicks reference
 auto ParticipantSimulator::tick(simex::common::Nanos now,
                                  simex::common::SessionPhase phase) -> RequestList {
   RequestList requests;
-  if (!config_.enabled || phase != simex::common::SessionPhase::CONTINUOUS ||
-      reference_price_ == simex::common::INVALID_PRICE_TICKS || !fair_value_initialized_ ||
-      config_.orders_per_second == 0) {
+  if (!config_.enabled || reference_price_ == simex::common::INVALID_PRICE_TICKS ||
+      !fair_value_initialized_ || config_.orders_per_second == 0) {
+    return requests;
+  }
+  if (phase != simex::common::SessionPhase::CONTINUOUS) {
+    next_request_time_ = now;
+    reseed_quotes_ = true;
     return requests;
   }
 
   updateFairValue(now);
-  const auto first_batch = stats_.generated_requests == 0;
+  const auto first_batch = stats_.generated_requests == 0 || reseed_quotes_;
   if (!first_batch && now < next_request_time_) return requests;
 
   // The first continuous tick seeds all configured maker levels so that a
@@ -142,6 +146,7 @@ auto ParticipantSimulator::tick(simex::common::Nanos now,
     const auto interval = std::max<simex::common::Nanos>(
         1, kNanosPerSecond / static_cast<simex::common::Nanos>(config_.orders_per_second));
     next_request_time_ = saturatingAdd(now, interval);
+    reseed_quotes_ = false;
   }
   return requests;
 }
@@ -187,7 +192,7 @@ auto ParticipantSimulator::scheduleExpiredMakerCancels(simex::common::Nanos now,
 
 auto ParticipantSimulator::generateMakerRequests(simex::common::Nanos now,
                                                  RequestList &requests) -> void {
-  const auto first_batch = stats_.generated_requests == 0;
+  const auto first_batch = stats_.generated_requests == 0 || reseed_quotes_;
   for (auto &bot : bots_) {
     if (bot.role != BotRole::MARKET_MAKER) continue;
     for (std::size_t level = 0; level < config_.quote_levels; ++level) {

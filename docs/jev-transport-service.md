@@ -8,9 +8,11 @@ cmake --build build/jev-integration -j 4
 ./build/jev-integration/simex_server server.json
 ```
 
-The server loads the instrument profile relative to server.json, starts REALTIME in a continuous session on the configured trading day, and binds localhost TCP. It publishes UDP to the configured destination port and emits `event=simex_ready` when the service starts. It accepts one participant connection per process. SIGINT/SIGTERM or peer disconnection ends the service; start a fresh process for another run.
+The server loads the instrument profile relative to server.json, anchors REALTIME to the system clock, schedules the configured trading-day session transitions, and binds localhost TCP. It publishes UDP to the configured destination port and emits `event=simex_ready` when the service starts. It accepts one participant connection per process. SIGINT/SIGTERM or peer disconnection ends the service; start a fresh process for another run.
 
-The initial participant is empty. No liquidity generator, background counterparty, market-data scenario, account recovery, or day-rollover scenario is added by this integration. Those are separate work. Keep the run within one trading day. `max_run_seconds` bounds the server lifetime and may not exceed 86400.
+The checked-in `server.json` enables the in-process `participant_simulator` with two market-making bots and one taker bot. The simulator starts from an empty book, then produces seeded `LIMIT + DAY + OPEN` flow during continuous trading: makers maintain both sides with cancel-and-replace refreshes, and takers cross the observed best quote. Internal bot responses stay inside the runtime; their public book and trade updates are published through the normal UDP stream. The simulator does not participate in collection auctions yet, and `max_run_seconds` bounds the server lifetime and may not exceed 86400.
+
+The launcher currently schedules the remaining phases of the configured trading day. Keep a run within that configured day; holiday-aware next-day calendar and rollover scheduling remain future work.
 
 The Jev adapter shares the v1 protocol definitions directly. V1 is a native little-endian 64-bit Linux ABI, now checked by size/offset assertions. Relative protocol-header includes prevent collisions with the participant repository's similarly named common/types.h. The payload format has not changed.
 

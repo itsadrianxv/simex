@@ -71,11 +71,19 @@ target_link_libraries(simex_harness PUBLIC simex_exchange simex_trace)
 target_compile_features(simex_harness PUBLIC cxx_std_20)
 target_link_libraries(simex_harness PUBLIC simex_warnings)
 
+add_library(simex_participant STATIC
+  src/participant_simulator/participant_simulator.cpp
+)
+target_include_directories(simex_participant PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(simex_participant PUBLIC simex_common)
+target_compile_features(simex_participant PUBLIC cxx_std_20)
+target_link_libraries(simex_participant PUBLIC simex_warnings)
+
 add_library(simex_runtime STATIC
   src/runtime/exchange_runtime.cpp
 )
 target_include_directories(simex_runtime PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(simex_runtime PUBLIC simex_harness)
+target_link_libraries(simex_runtime PUBLIC simex_harness simex_participant)
 target_compile_features(simex_runtime PUBLIC cxx_std_20)
 target_link_libraries(simex_runtime PUBLIC simex_warnings)
 
@@ -141,6 +149,14 @@ if(BUILD_TESTING)
   add_executable(test_exchange_runtime src/tests/test_exchange_runtime.cpp)
   target_link_libraries(test_exchange_runtime PRIVATE simex_runtime)
   add_test(NAME exchange_runtime COMMAND test_exchange_runtime)
+
+  add_executable(test_participant_runtime src/tests/test_participant_runtime.cpp)
+  target_link_libraries(test_participant_runtime PRIVATE simex_runtime)
+  add_test(NAME participant_runtime COMMAND test_participant_runtime)
+
+  add_executable(test_participant_simulator src/tests/test_participant_simulator.cpp)
+  target_link_libraries(test_participant_simulator PRIVATE simex_participant)
+  add_test(NAME participant_simulator COMMAND test_participant_simulator)
 
   add_executable(test_transport src/tests/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE simex_transport)

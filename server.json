@@ -7,5 +7,23 @@
   "udp_destination_port": 19002,
   "snapshot_interval_ms": 1000,
   "queue_capacity": 4096,
-  "max_run_seconds": 28800
+  "max_run_seconds": 28800,
+  "participant_simulator": {
+    "enabled": true,
+    "seed": 20260926,
+    "client_id_start": 1000,
+    "market_maker_count": 2,
+    "taker_count": 1,
+    "orders_per_second": 2,
+    "fair_value_interval_nanos": 1000000000,
+    "fair_value_step_ticks": 1,
+    "fair_value_reversion_ticks": 1,
+    "quote_levels": 1,
+    "quote_spread_ticks": 2,
+    "quote_ttl_nanos": 5000000000,
+    "min_qty": 1,
+    "max_qty": 1,
+    "max_position": 10,
+    "ticker_id": 0
+  }
 }

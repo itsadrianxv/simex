@@ -36,6 +36,11 @@ class ParticipantHarness final {
   auto resetClock(simex::common::Nanos timestamp, simex::common::TradingDayId trading_day) -> void;
   auto advanceTo(simex::common::Nanos timestamp) -> bool;
 
+  /// Return the phase currently applied to the matching engine.
+  [[nodiscard]] auto phase() const noexcept -> simex::common::SessionPhase {
+    return matching_engine_.phase();
+  }
+
   auto drainResponses() -> std::vector<simex::exchange::ClientResponse>;
   auto drainUpdates() -> std::vector<simex::exchange::MarketUpdate>;
   [[nodiscard]] auto stateHash() const -> std::string;

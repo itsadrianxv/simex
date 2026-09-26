@@ -195,6 +195,7 @@ class ParticipantSimulator final {
   simex::common::Nanos next_request_time_ = 0;
   simex::common::Nanos last_fair_value_update_ = 0;
   bool fair_value_initialized_ = false;
+  bool reseed_quotes_ = true;
   SimulatorStats stats_;
 };
 

@@ -9,6 +9,8 @@ namespace simex::runtime {
 ExchangeRuntime::ExchangeRuntime(ExchangeRuntimeConfig config)
     : config_(std::move(config)),
       harness_(config_.instrument, config_.queue_capacity),
+      participant_simulator_(config_.instrument, config_.participant_simulator,
+                             config_.reference_price),
       commands_(config_.queue_capacity),
       responses_(config_.queue_capacity),
       updates_(config_.queue_capacity) {}
@@ -53,10 +55,19 @@ auto ExchangeRuntime::requestSnapshot() -> bool {
 }
 
 auto ExchangeRuntime::initialize() -> bool {
+  if (config_.participant_simulator.enabled &&
+      config_.external_client_id != simex::common::INVALID_CLIENT_ID &&
+      isInternalClient(config_.external_client_id)) {
+    return false;
+  }
   harness_.resetClock(config_.initial_time, config_.trading_day);
   current_time_ = config_.initial_time;
   if (!harness_.setReferencePrice(config_.reference_price) ||
       !harness_.setPhase(config_.initial_phase)) return false;
+  if (config_.participant_simulator.enabled &&
+      !participant_simulator_.setReferencePrice(config_.reference_price)) {
+    return false;
+  }
   for (const auto &event : config_.sessions) {
     if (!harness_.scheduleSessionPhase(event.timestamp, event.trading_day, event.phase)) return false;
   }
@@ -105,15 +116,55 @@ auto ExchangeRuntime::advanceRealtime() -> bool {
 
 auto ExchangeRuntime::drainHarnessOutputs() -> void {
   for (auto response : harness_.drainResponses()) {
-    if (!responses_.tryPush(std::move(response))) {
+    if (isInternalClient(response.client_id)) {
+      std::lock_guard lock(participant_mutex_);
+      participant_simulator_.onResponse(response);
+    } else if (!responses_.tryPush(std::move(response))) {
       throw std::runtime_error("Runtime response queue overflow");
     }
   }
   for (auto update : harness_.drainUpdates()) {
+    {
+      std::lock_guard lock(participant_mutex_);
+      participant_simulator_.onMarketUpdate(update);
+    }
     std::lock_guard lock(snapshot_mutex_);
     if (!updates_.tryPush(update)) throw std::runtime_error("Runtime market queue overflow");
     snapshot_synthesizer_.apply({++market_sequence_, update});
   }
+}
+
+auto ExchangeRuntime::tickParticipantSimulator() -> bool {
+  if (!config_.participant_simulator.enabled) return true;
+
+  // TODO(simex-participant): Move this producer behind a serialized MPSC
+  // command ingress when participant strategies run on independent threads.
+  // The runtime thread remains the sole caller of ParticipantHarness::submit
+  // for the first version so the existing SPSC queues stay valid.
+  simex::participant::ParticipantSimulator::RequestList requests;
+  {
+    std::lock_guard lock(participant_mutex_);
+    requests = participant_simulator_.tick(current_time_, harness_.phase());
+  }
+  for (const auto &request : requests) {
+    if (!isInternalClient(request.client_id) || !harness_.submit(request)) return false;
+  }
+  drainHarnessOutputs();
+  return true;
+}
+
+auto ExchangeRuntime::isInternalClient(simex::common::ClientId client_id) const noexcept -> bool {
+  if (!config_.participant_simulator.enabled ||
+      (config_.participant_simulator.market_maker_count == 0 &&
+       config_.participant_simulator.taker_count == 0)) {
+    return false;
+  }
+  const auto first = static_cast<std::uint64_t>(config_.participant_simulator.client_id_start);
+  const auto count = static_cast<std::uint64_t>(config_.participant_simulator.market_maker_count) +
+                     static_cast<std::uint64_t>(config_.participant_simulator.taker_count);
+  const auto last = first + count - 1;
+  const auto value = static_cast<std::uint64_t>(client_id);
+  return value >= first && value <= last;
 }
 
 auto ExchangeRuntime::run() -> void {
@@ -140,6 +191,10 @@ auto ExchangeRuntime::run() -> void {
         break;
       }
       drainHarnessOutputs();
+    }
+    if (!tickParticipantSimulator()) {
+      state_.store(RuntimeState::FAILED);
+      break;
     }
     if (!did_work) std::this_thread::sleep_for(config_.realtime_poll);
   }
