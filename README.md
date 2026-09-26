@@ -7,6 +7,8 @@ first vertical slice keeps the Chapter 12 component boundaries and provides:
 - RB auction and continuous price-time matching with price limits;
 - today/yesterday thin front clearing and daily-close cancellation;
 - direct `FIFOSequencer`/queue/`MatchingEngine` participant harness;
+- a dedicated `ExchangeRuntime` thread with manual/replay/realtime clock modes;
+- localhost TCP order gateway and UDP incremental/snapshot market data transport;
 - venue-sequenced in-memory incremental market data and independent snapshots;
 - UTF-8 JSON replay traces with a final SHA-256 state hash.
 
@@ -20,17 +22,27 @@ The build prefers a system `nlohmann_json` package and requires system OpenSSL.
 If the JSON package is unavailable, opt into the pinned source fallback:
 
 ```sh
-cmake -S . -B build -DJEV_FETCH_NLOHMANN_JSON=ON
+cmake -S . -B build -DSIMEX_FETCH_NLOHMANN_JSON=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
 The default keeps the fetch option off and fails during CMake configuration when
-the system JSON package is missing. TCP/UDP transport remains a later adapter;
-the current correctness path is entirely in process.
+the system JSON package is missing.
 
 Run the deterministic demo with:
 
 ```sh
 ./build/simex_demo simex.json
 ```
+
+For reproducible Ninja builds, use the checked-in CMake presets:
+
+```sh
+cmake --preset ci-gcc
+cmake --build --preset ci-gcc
+ctest --preset test-ci-gcc
+```
+
+The `dev-gcc`, `dev-clang`, `ci-gcc`, `ci-clang`, and `sanitizer` presets provide the
+corresponding local, CI, and sanitizer configurations.

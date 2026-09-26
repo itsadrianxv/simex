@@ -71,6 +71,24 @@ target_link_libraries(simex_harness PUBLIC simex_exchange simex_trace)
 target_compile_features(simex_harness PUBLIC cxx_std_20)
 target_link_libraries(simex_harness PUBLIC simex_warnings)
 
+add_library(simex_runtime STATIC
+  src/runtime/exchange_runtime.cpp
+)
+target_include_directories(simex_runtime PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(simex_runtime PUBLIC simex_harness)
+target_compile_features(simex_runtime PUBLIC cxx_std_20)
+target_link_libraries(simex_runtime PUBLIC simex_warnings)
+
+add_library(simex_transport STATIC
+  src/transport/tcp_order_gateway.cpp
+  src/transport/udp_market_data_publisher.cpp
+  src/transport/exchange_service.cpp
+)
+target_include_directories(simex_transport PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(simex_transport PUBLIC simex_exchange simex_runtime)
+target_compile_features(simex_transport PUBLIC cxx_std_20)
+target_link_libraries(simex_transport PUBLIC simex_warnings)
+
 add_executable(simex_demo src/main.cpp)
 target_link_libraries(simex_demo PRIVATE simex_exchange simex_trace)
 target_compile_features(simex_demo PRIVATE cxx_std_20)
@@ -117,4 +135,18 @@ if(BUILD_TESTING)
   add_executable(test_trace src/tests/test_trace.cpp)
   target_link_libraries(test_trace PRIVATE simex_trace)
   add_test(NAME trace COMMAND test_trace)
+
+  add_executable(test_exchange_runtime src/tests/test_exchange_runtime.cpp)
+  target_link_libraries(test_exchange_runtime PRIVATE simex_runtime)
+  add_test(NAME exchange_runtime COMMAND test_exchange_runtime)
+
+  add_executable(test_transport src/tests/test_transport.cpp)
+  target_link_libraries(test_transport PRIVATE simex_transport)
+  add_test(NAME transport COMMAND test_transport)
+endif()
+
+if(BUILD_TESTING)
+  add_executable(test_exchange_service src/tests/test_exchange_service.cpp)
+  target_link_libraries(test_exchange_service PRIVATE simex_transport)
+  add_test(NAME exchange_service COMMAND test_exchange_service)
 endif()

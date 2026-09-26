@@ -1,0 +1,146 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base-ninja",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "dev-gcc",
+      "inherits": "base-ninja",
+      "displayName": "GCC Debug",
+      "description": "Local Debug build with GCC",
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "dev-clang",
+      "inherits": "base-ninja",
+      "displayName": "Clang Debug",
+      "description": "Local Debug build with Clang",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "ci-gcc",
+      "inherits": "base-ninja",
+      "displayName": "GCC Release",
+      "description": "CI Release build with GCC",
+      "environment": {
+        "CC": "gcc",
+        "CXX": "g++"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "ci-clang",
+      "inherits": "base-ninja",
+      "displayName": "Clang Release",
+      "description": "CI Release build with Clang",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "sanitizer",
+      "inherits": "base-ninja",
+      "displayName": "Clang Sanitizer",
+      "description": "Debug build with AddressSanitizer and UBSan",
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev-gcc",
+      "configurePreset": "dev-gcc",
+      "jobs": 2
+    },
+    {
+      "name": "dev-clang",
+      "configurePreset": "dev-clang",
+      "jobs": 2
+    },
+    {
+      "name": "ci-gcc",
+      "configurePreset": "ci-gcc",
+      "jobs": 2
+    },
+    {
+      "name": "ci-clang",
+      "configurePreset": "ci-clang",
+      "jobs": 2
+    },
+    {
+      "name": "sanitizer",
+      "configurePreset": "sanitizer",
+      "jobs": 2
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-ci-gcc",
+      "configurePreset": "ci-gcc",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 2
+      }
+    },
+    {
+      "name": "test-ci-clang",
+      "configurePreset": "ci-clang",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 2
+      }
+    },
+    {
+      "name": "test-sanitizer",
+      "configurePreset": "sanitizer",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 2
+      }
+    }
+  ]
+}
