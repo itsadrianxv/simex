@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace Exchange {
+namespace simex::exchange {
 
 MarketDataPublisher::MarketDataPublisher(MarketUpdateQueue *market_updates)
     : market_updates_(market_updates) {
@@ -20,4 +20,4 @@ auto MarketDataPublisher::publishPending() -> std::vector<PublicMarketUpdate> {
   return result;
 }
 
-}  // namespace Exchange
+}  // namespace simex::exchange

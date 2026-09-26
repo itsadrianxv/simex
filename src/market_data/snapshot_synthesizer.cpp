@@ -2,15 +2,15 @@
 
 #include <algorithm>
 
-namespace Exchange {
+namespace simex::exchange {
 
 auto SnapshotSynthesizer::apply(const PublicMarketUpdate &update) -> void {
   last_incremental_sequence_ = update.sequence;
   switch (update.update.type) {
-    case Common::MarketUpdateType::ADD:
+    case simex::common::MarketUpdateType::ADD:
       live_orders_[update.update.market_order_id] = update;
       break;
-    case Common::MarketUpdateType::MODIFY: {
+    case simex::common::MarketUpdateType::MODIFY: {
       const auto found = live_orders_.find(update.update.market_order_id);
       if (found != live_orders_.end()) {
         found->second = update;
@@ -18,10 +18,10 @@ auto SnapshotSynthesizer::apply(const PublicMarketUpdate &update) -> void {
       }
       break;
     }
-    case Common::MarketUpdateType::CANCEL:
+    case simex::common::MarketUpdateType::CANCEL:
       live_orders_.erase(update.update.market_order_id);
       break;
-    case Common::MarketUpdateType::TRADE:
+    case simex::common::MarketUpdateType::TRADE:
       break;
   }
 }
@@ -38,10 +38,10 @@ auto SnapshotSynthesizer::synthesize() const -> Snapshot {
       return left.update.ticker_id < right.update.ticker_id;
     }
     if (left.update.side != right.update.side) {
-      return left.update.side == Common::Side::SELL;
+      return left.update.side == simex::common::Side::SELL;
     }
     if (left.update.price_ticks != right.update.price_ticks) {
-      return left.update.side == Common::Side::BUY
+      return left.update.side == simex::common::Side::BUY
                  ? left.update.price_ticks > right.update.price_ticks
                  : left.update.price_ticks < right.update.price_ticks;
     }
@@ -50,4 +50,4 @@ auto SnapshotSynthesizer::synthesize() const -> Snapshot {
   return snapshot;
 }
 
-}  // namespace Exchange
+}  // namespace simex::exchange

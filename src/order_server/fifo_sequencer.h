@@ -8,12 +8,12 @@
 #include "common/lf_queue.h"
 #include "exchange/messages.h"
 
-namespace Exchange {
+namespace simex::exchange {
 
 /// Collects a batch of requests and publishes them in rx_time order.
 class FIFOSequencer final {
  public:
-  FIFOSequencer(Common::LFQueue<ClientRequest> *outgoing,
+  FIFOSequencer(simex::common::LFQueue<ClientRequest> *outgoing,
                 std::size_t pending_capacity = 1024)
       : outgoing_(outgoing), pending_capacity_(pending_capacity) {
     if (outgoing_ == nullptr || pending_capacity_ == 0) {
@@ -47,9 +47,9 @@ class FIFOSequencer final {
   }
 
  private:
-  Common::LFQueue<ClientRequest> *outgoing_ = nullptr;
+  simex::common::LFQueue<ClientRequest> *outgoing_ = nullptr;
   std::size_t pending_capacity_ = 0;
   std::vector<ClientRequest> pending_;
 };
 
-}  // namespace Exchange
+}  // namespace simex::exchange

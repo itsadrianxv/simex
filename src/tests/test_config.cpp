@@ -4,7 +4,7 @@
 
 int main(int argc, char **argv) {
   assert(argc == 2);
-  const auto config = Common::loadSimexConfig(argv[1]);
+  const auto config = simex::common::loadSimexConfig(argv[1]);
   assert(config.schema_version == 1);
   assert(config.timezone == "Asia/Shanghai");
   assert(config.instrument.symbol == "RB");

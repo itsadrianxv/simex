@@ -8,7 +8,7 @@
 
 #include "common/order_types.h"
 
-namespace Common {
+namespace simex::common {
 
 /// A deterministic clock for replay and scenario-driven venue tests.
 ///
@@ -186,4 +186,4 @@ class VirtualClock final {
   std::size_t next_phase_event_ = 0;
 };
 
-}  // namespace Common
+}  // namespace simex::common

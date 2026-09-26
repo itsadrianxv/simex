@@ -8,7 +8,7 @@
 #include "common/order_types.h"
 #include "common/types.h"
 
-namespace Common {
+namespace simex::common {
 
 struct SessionWindowConfig final {
   SessionPhase phase = SessionPhase::CLOSED;
@@ -54,4 +54,4 @@ struct SimexConfig final {
 /// Throws std::runtime_error for malformed or unsupported configuration.
 auto loadSimexConfig(const std::filesystem::path &path) -> SimexConfig;
 
-}  // namespace Common
+}  // namespace simex::common

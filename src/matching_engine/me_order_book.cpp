@@ -4,15 +4,15 @@
 #include <limits>
 #include <utility>
 
-namespace Exchange {
+namespace simex::exchange {
 
-MEOrderBook::MEOrderBook(Common::InstrumentConfig config)
+MEOrderBook::MEOrderBook(simex::common::InstrumentConfig config)
     : config_(std::move(config)), levels_(config_.max_price_levels) {}
 
-auto MEOrderBook::setPriceBand(Common::PriceTicks lower_tick,
-                               Common::PriceTicks upper_tick) -> bool {
+auto MEOrderBook::setPriceBand(simex::common::PriceTicks lower_tick,
+                               simex::common::PriceTicks upper_tick) -> bool {
   if (!market_orders_.empty() || lower_tick > upper_tick ||
-      upper_tick - lower_tick + 1 > static_cast<Common::PriceTicks>(levels_.size())) {
+      upper_tick - lower_tick + 1 > static_cast<simex::common::PriceTicks>(levels_.size())) {
     return false;
   }
   lower_tick_ = lower_tick;
@@ -21,7 +21,7 @@ auto MEOrderBook::setPriceBand(Common::PriceTicks lower_tick,
   return true;
 }
 
-auto MEOrderBook::priceIndex(Common::PriceTicks price) const noexcept
+auto MEOrderBook::priceIndex(simex::common::PriceTicks price) const noexcept
     -> std::optional<std::size_t> {
   if (!has_price_band_ || price < lower_tick_ || price > upper_tick_) {
     return std::nullopt;
@@ -31,7 +31,7 @@ auto MEOrderBook::priceIndex(Common::PriceTicks price) const noexcept
 
 auto MEOrderBook::add(RestingOrder order) -> bool {
   const auto index = priceIndex(order.request.price_ticks);
-  if (!index || order.leaves_qty == 0 || order.market_order_id == Common::INVALID_ORDER_ID) {
+  if (!index || order.leaves_qty == 0 || order.market_order_id == simex::common::INVALID_ORDER_ID) {
     return false;
   }
   const ClientKey client_key{order.request.client_id, order.request.client_order_id};
@@ -43,7 +43,7 @@ auto MEOrderBook::add(RestingOrder order) -> bool {
   if (level.orders.empty()) {
     level.price = order.request.price_ticks;
     level.side = order.request.side;
-    if (order.request.side == Common::Side::BUY) {
+    if (order.request.side == simex::common::Side::BUY) {
       bid_prices_.insert(order.request.price_ticks);
     } else {
       ask_prices_.insert(order.request.price_ticks);
@@ -68,18 +68,18 @@ auto MEOrderBook::add(RestingOrder order) -> bool {
   return true;
 }
 
-auto MEOrderBook::clearLevelIfEmpty(Common::PriceTicks price, Common::Side side) -> void {
+auto MEOrderBook::clearLevelIfEmpty(simex::common::PriceTicks price, simex::common::Side side) -> void {
   const auto index = priceIndex(price);
   if (!index || !levels_[*index].orders.empty()) return;
-  levels_[*index].price = Common::INVALID_PRICE_TICKS;
-  if (side == Common::Side::BUY) {
+  levels_[*index].price = simex::common::INVALID_PRICE_TICKS;
+  if (side == simex::common::Side::BUY) {
     bid_prices_.erase(price);
   } else {
     ask_prices_.erase(price);
   }
 }
 
-auto MEOrderBook::removeIterator(Common::PriceTicks price,
+auto MEOrderBook::removeIterator(simex::common::PriceTicks price,
                                  std::list<RestingOrder>::iterator iterator)
     -> RestingOrder {
   auto &level = levels_[*priceIndex(price)];
@@ -93,43 +93,43 @@ auto MEOrderBook::removeIterator(Common::PriceTicks price,
   return result;
 }
 
-auto MEOrderBook::remove(Common::MarketOrderId market_order_id)
+auto MEOrderBook::remove(simex::common::MarketOrderId market_order_id)
     -> std::optional<RestingOrder> {
   const auto found = market_orders_.find(market_order_id);
   if (found == market_orders_.end()) return std::nullopt;
   return removeIterator(found->second.price, found->second.iterator);
 }
 
-auto MEOrderBook::cancel(Common::ClientId client_id,
-                         Common::ClientOrderId client_order_id)
+auto MEOrderBook::cancel(simex::common::ClientId client_id,
+                         simex::common::ClientOrderId client_order_id)
     -> std::optional<RestingOrder> {
   const auto found = client_orders_.find(ClientKey{client_id, client_order_id});
   if (found == client_orders_.end()) return std::nullopt;
   return remove(found->second);
 }
 
-auto MEOrderBook::contains(Common::ClientId client_id,
-                           Common::ClientOrderId client_order_id) const noexcept -> bool {
+auto MEOrderBook::contains(simex::common::ClientId client_id,
+                           simex::common::ClientOrderId client_order_id) const noexcept -> bool {
   return client_orders_.contains(ClientKey{client_id, client_order_id});
 }
 
-auto MEOrderBook::availableQuantity(Common::Side aggressive_side,
-                                    Common::OrderType order_type,
-                                    Common::PriceTicks limit_price) const noexcept -> Common::Qty {
-  Common::Qty quantity = 0;
-  const auto crosses = [&](Common::PriceTicks passive_price) {
-    if (order_type == Common::OrderType::MARKET) return true;
-    return aggressive_side == Common::Side::BUY ? passive_price <= limit_price
+auto MEOrderBook::availableQuantity(simex::common::Side aggressive_side,
+                                    simex::common::OrderType order_type,
+                                    simex::common::PriceTicks limit_price) const noexcept -> simex::common::Qty {
+  simex::common::Qty quantity = 0;
+  const auto crosses = [&](simex::common::PriceTicks passive_price) {
+    if (order_type == simex::common::OrderType::MARKET) return true;
+    return aggressive_side == simex::common::Side::BUY ? passive_price <= limit_price
                                                  : passive_price >= limit_price;
   };
 
-  if (aggressive_side == Common::Side::BUY) {
+  if (aggressive_side == simex::common::Side::BUY) {
     for (const auto price : ask_prices_) {
       if (!crosses(price)) break;
       const auto &level = levels_[*priceIndex(price)];
       for (const auto &order : level.orders) {
-        if (std::numeric_limits<Common::Qty>::max() - quantity < order.leaves_qty) {
-          return std::numeric_limits<Common::Qty>::max();
+        if (std::numeric_limits<simex::common::Qty>::max() - quantity < order.leaves_qty) {
+          return std::numeric_limits<simex::common::Qty>::max();
         }
         quantity += order.leaves_qty;
       }
@@ -139,8 +139,8 @@ auto MEOrderBook::availableQuantity(Common::Side aggressive_side,
       if (!crosses(price)) break;
       const auto &level = levels_[*priceIndex(price)];
       for (const auto &order : level.orders) {
-        if (std::numeric_limits<Common::Qty>::max() - quantity < order.leaves_qty) {
-          return std::numeric_limits<Common::Qty>::max();
+        if (std::numeric_limits<simex::common::Qty>::max() - quantity < order.leaves_qty) {
+          return std::numeric_limits<simex::common::Qty>::max();
         }
         quantity += order.leaves_qty;
       }
@@ -149,19 +149,19 @@ auto MEOrderBook::availableQuantity(Common::Side aggressive_side,
   return quantity;
 }
 
-auto MEOrderBook::match(Common::Side aggressive_side, Common::OrderType order_type,
-                        Common::PriceTicks limit_price, Common::Qty quantity) -> MatchResult {
+auto MEOrderBook::match(simex::common::Side aggressive_side, simex::common::OrderType order_type,
+                        simex::common::PriceTicks limit_price, simex::common::Qty quantity) -> MatchResult {
   MatchResult result;
   result.leaves_qty = quantity;
-  const auto crosses = [&](Common::PriceTicks passive_price) {
-    if (order_type == Common::OrderType::MARKET) return true;
-    return aggressive_side == Common::Side::BUY ? passive_price <= limit_price
+  const auto crosses = [&](simex::common::PriceTicks passive_price) {
+    if (order_type == simex::common::OrderType::MARKET) return true;
+    return aggressive_side == simex::common::Side::BUY ? passive_price <= limit_price
                                                  : passive_price >= limit_price;
   };
 
   while (result.leaves_qty > 0) {
-    Common::PriceTicks passive_price = Common::INVALID_PRICE_TICKS;
-    if (aggressive_side == Common::Side::BUY) {
+    simex::common::PriceTicks passive_price = simex::common::INVALID_PRICE_TICKS;
+    if (aggressive_side == simex::common::Side::BUY) {
       if (ask_prices_.empty()) break;
       passive_price = *ask_prices_.begin();
     } else {
@@ -208,4 +208,4 @@ auto MEOrderBook::drain() -> std::vector<RestingOrder> {
   return result;
 }
 
-}  // namespace Exchange
+}  // namespace simex::exchange

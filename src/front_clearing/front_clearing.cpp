@@ -4,56 +4,56 @@
 #include <algorithm>
 #include <sstream>
 
-namespace Exchange {
+namespace simex::exchange {
 
-auto FrontClearing::account(Common::ClientId client_id) -> AccountState & {
+auto FrontClearing::account(simex::common::ClientId client_id) -> AccountState & {
   return accounts_[client_id];
 }
 
-Common::Qty &FrontClearing::positionSlot(PositionState &position_state,
+simex::common::Qty &FrontClearing::positionSlot(PositionState &position_state,
                                          const ClearingOrder &order) noexcept {
-  if (order.position_effect == Common::PositionEffect::CLOSE_TODAY) {
-    return order.side == Common::Side::BUY ? position_state.short_today
+  if (order.position_effect == simex::common::PositionEffect::CLOSE_TODAY) {
+    return order.side == simex::common::Side::BUY ? position_state.short_today
                                            : position_state.long_today;
   }
-  return order.side == Common::Side::BUY ? position_state.short_yesterday
+  return order.side == simex::common::Side::BUY ? position_state.short_yesterday
                                          : position_state.long_yesterday;
 }
 
 auto FrontClearing::positionSlot(const PositionState &position_state,
-                                 const ClearingOrder &order) const noexcept -> Common::Qty {
-  if (order.position_effect == Common::PositionEffect::CLOSE_TODAY) {
-    return order.side == Common::Side::BUY ? position_state.short_today
+                                 const ClearingOrder &order) const noexcept -> simex::common::Qty {
+  if (order.position_effect == simex::common::PositionEffect::CLOSE_TODAY) {
+    return order.side == simex::common::Side::BUY ? position_state.short_today
                                            : position_state.long_today;
   }
-  return order.side == Common::Side::BUY ? position_state.short_yesterday
+  return order.side == simex::common::Side::BUY ? position_state.short_yesterday
                                          : position_state.long_yesterday;
 }
 
-Common::Qty &FrontClearing::frozenSlot(AccountState &account_state,
+simex::common::Qty &FrontClearing::frozenSlot(AccountState &account_state,
                                       const ClearingOrder &order) noexcept {
-  if (order.position_effect == Common::PositionEffect::CLOSE_TODAY) {
-    return order.side == Common::Side::BUY ? account_state.frozen_short_today
+  if (order.position_effect == simex::common::PositionEffect::CLOSE_TODAY) {
+    return order.side == simex::common::Side::BUY ? account_state.frozen_short_today
                                            : account_state.frozen_long_today;
   }
-  return order.side == Common::Side::BUY ? account_state.frozen_short_yesterday
+  return order.side == simex::common::Side::BUY ? account_state.frozen_short_yesterday
                                          : account_state.frozen_long_yesterday;
 }
 
 auto FrontClearing::frozenSlot(const AccountState &account_state,
-                               const ClearingOrder &order) const noexcept -> Common::Qty {
-  if (order.position_effect == Common::PositionEffect::CLOSE_TODAY) {
-    return order.side == Common::Side::BUY ? account_state.frozen_short_today
+                               const ClearingOrder &order) const noexcept -> simex::common::Qty {
+  if (order.position_effect == simex::common::PositionEffect::CLOSE_TODAY) {
+    return order.side == simex::common::Side::BUY ? account_state.frozen_short_today
                                            : account_state.frozen_long_today;
   }
-  return order.side == Common::Side::BUY ? account_state.frozen_short_yesterday
+  return order.side == simex::common::Side::BUY ? account_state.frozen_short_yesterday
                                          : account_state.frozen_long_yesterday;
 }
 
 auto FrontClearing::available(const AccountState &account_state,
-                              const ClearingOrder &order) const noexcept -> Common::Qty {
-  if (order.position_effect == Common::PositionEffect::OPEN) {
-    return std::numeric_limits<Common::Qty>::max();
+                              const ClearingOrder &order) const noexcept -> simex::common::Qty {
+  if (order.position_effect == simex::common::PositionEffect::OPEN) {
+    return std::numeric_limits<simex::common::Qty>::max();
   }
   const auto held = positionSlot(account_state.position, order);
   const auto frozen = frozenSlot(account_state, order);
@@ -61,45 +61,45 @@ auto FrontClearing::available(const AccountState &account_state,
 }
 
 auto FrontClearing::validateAndReserve(const ClearingOrder &order) -> ClearingAdmission {
-  if (order.client_id == Common::INVALID_CLIENT_ID ||
-      order.client_order_id == Common::INVALID_ORDER_ID || order.qty == 0) {
-    return {false, Common::ReasonCode::INVALID_QTY};
+  if (order.client_id == simex::common::INVALID_CLIENT_ID ||
+      order.client_order_id == simex::common::INVALID_ORDER_ID || order.qty == 0) {
+    return {false, simex::common::ReasonCode::INVALID_QTY};
   }
 
   const OrderKey key{order.client_id, order.client_order_id};
   if (reservations_.contains(key)) {
-    return {false, Common::ReasonCode::DUPLICATE_ORDER_ID};
+    return {false, simex::common::ReasonCode::DUPLICATE_ORDER_ID};
   }
 
   AccountState *account_state = nullptr;
-  if (order.position_effect == Common::PositionEffect::OPEN) {
+  if (order.position_effect == simex::common::PositionEffect::OPEN) {
     account_state = &account(order.client_id);
   } else {
     const auto found_account = accounts_.find(order.client_id);
     if (found_account == accounts_.end() || available(found_account->second, order) < order.qty) {
-      return {false, order.position_effect == Common::PositionEffect::CLOSE_TODAY
-                         ? Common::ReasonCode::INSUFFICIENT_CLOSE_TODAY
-                         : Common::ReasonCode::INSUFFICIENT_CLOSE_YESTERDAY};
+      return {false, order.position_effect == simex::common::PositionEffect::CLOSE_TODAY
+                         ? simex::common::ReasonCode::INSUFFICIENT_CLOSE_TODAY
+                         : simex::common::ReasonCode::INSUFFICIENT_CLOSE_YESTERDAY};
     }
     account_state = &found_account->second;
   }
 
-  if (order.position_effect != Common::PositionEffect::OPEN &&
+  if (order.position_effect != simex::common::PositionEffect::OPEN &&
       available(*account_state, order) < order.qty) {
-    return {false, order.position_effect == Common::PositionEffect::CLOSE_TODAY
-                       ? Common::ReasonCode::INSUFFICIENT_CLOSE_TODAY
-                       : Common::ReasonCode::INSUFFICIENT_CLOSE_YESTERDAY};
+    return {false, order.position_effect == simex::common::PositionEffect::CLOSE_TODAY
+                       ? simex::common::ReasonCode::INSUFFICIENT_CLOSE_TODAY
+                       : simex::common::ReasonCode::INSUFFICIENT_CLOSE_YESTERDAY};
   }
 
-  if (order.position_effect != Common::PositionEffect::OPEN) {
+  if (order.position_effect != simex::common::PositionEffect::OPEN) {
     auto &frozen = frozenSlot(*account_state, order);
     frozen += order.qty;
   }
   reservations_.emplace(key, Reservation{order, order.qty});
-  return {true, Common::ReasonCode::NONE};
+  return {true, simex::common::ReasonCode::NONE};
 }
 
-auto FrontClearing::onFill(const ClearingOrder &order, Common::Qty fill_qty) -> bool {
+auto FrontClearing::onFill(const ClearingOrder &order, simex::common::Qty fill_qty) -> bool {
   if (fill_qty == 0 || fill_qty > order.qty) {
     return false;
   }
@@ -111,8 +111,8 @@ auto FrontClearing::onFill(const ClearingOrder &order, Common::Qty fill_qty) -> 
   }
 
   auto &account_state = account(order.client_id);
-  if (order.position_effect == Common::PositionEffect::OPEN) {
-    auto &position = order.side == Common::Side::BUY ? account_state.position.long_today
+  if (order.position_effect == simex::common::PositionEffect::OPEN) {
+    auto &position = order.side == simex::common::Side::BUY ? account_state.position.long_today
                                                      : account_state.position.short_today;
     position += fill_qty;
   } else {
@@ -131,18 +131,18 @@ auto FrontClearing::onFill(const ClearingOrder &order, Common::Qty fill_qty) -> 
   return true;
 }
 
-auto FrontClearing::onCancel(const ClearingOrder &order, Common::Qty leaves_qty) -> bool {
+auto FrontClearing::onCancel(const ClearingOrder &order, simex::common::Qty leaves_qty) -> bool {
   const OrderKey key{order.client_id, order.client_order_id};
   const auto found = reservations_.find(key);
   if (found == reservations_.end()) {
-    return order.position_effect == Common::PositionEffect::OPEN && leaves_qty == 0;
+    return order.position_effect == simex::common::PositionEffect::OPEN && leaves_qty == 0;
   }
   if (leaves_qty != found->second.remaining) {
     return false;
   }
 
   auto &account_state = account(order.client_id);
-  if (order.position_effect != Common::PositionEffect::OPEN) {
+  if (order.position_effect != simex::common::PositionEffect::OPEN) {
     frozenSlot(account_state, order) -= leaves_qty;
   }
   reservations_.erase(found);
@@ -166,9 +166,9 @@ auto FrontClearing::onTradingDayRollover() -> bool {
   return true;
 }
 
-auto FrontClearing::seedPosition(Common::ClientId client_id,
+auto FrontClearing::seedPosition(simex::common::ClientId client_id,
                                  const PositionState &position) -> bool {
-  if (client_id == Common::INVALID_CLIENT_ID) return false;
+  if (client_id == simex::common::INVALID_CLIENT_ID) return false;
   for (const auto &[key, reservation] : reservations_) {
     if (key.client_id == client_id) return false;
   }
@@ -182,7 +182,7 @@ auto FrontClearing::seedPosition(Common::ClientId client_id,
 }
 
 auto FrontClearing::canonicalState() const -> std::string {
-  std::vector<Common::ClientId> client_ids;
+  std::vector<simex::common::ClientId> client_ids;
   client_ids.reserve(accounts_.size());
   for (const auto &[client_id, account_state] : accounts_) {
     (void)account_state;
@@ -220,25 +220,25 @@ auto FrontClearing::canonicalState() const -> std::string {
   return output.str();
 }
 
-auto FrontClearing::position(Common::ClientId client_id) const noexcept -> PositionState {
+auto FrontClearing::position(simex::common::ClientId client_id) const noexcept -> PositionState {
   const auto found = accounts_.find(client_id);
   return found == accounts_.end() ? PositionState{} : found->second.position;
 }
 
-auto FrontClearing::frozenCloseToday(Common::ClientId client_id,
-                                     Common::Side side) const noexcept -> Common::Qty {
+auto FrontClearing::frozenCloseToday(simex::common::ClientId client_id,
+                                     simex::common::Side side) const noexcept -> simex::common::Qty {
   const auto found = accounts_.find(client_id);
   if (found == accounts_.end()) return 0;
-  return side == Common::Side::BUY ? found->second.frozen_short_today
+  return side == simex::common::Side::BUY ? found->second.frozen_short_today
                                    : found->second.frozen_long_today;
 }
 
-auto FrontClearing::frozenCloseYesterday(Common::ClientId client_id,
-                                         Common::Side side) const noexcept -> Common::Qty {
+auto FrontClearing::frozenCloseYesterday(simex::common::ClientId client_id,
+                                         simex::common::Side side) const noexcept -> simex::common::Qty {
   const auto found = accounts_.find(client_id);
   if (found == accounts_.end()) return 0;
-  return side == Common::Side::BUY ? found->second.frozen_short_yesterday
+  return side == simex::common::Side::BUY ? found->second.frozen_short_yesterday
                                    : found->second.frozen_long_yesterday;
 }
 
-}  // namespace Exchange
+}  // namespace simex::exchange

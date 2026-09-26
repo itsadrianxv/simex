@@ -11,3 +11,4 @@ CONTEXT.md
 !docs/adr/
 !docs/adr/*.md
 !CONTEXT.md
+.codex/

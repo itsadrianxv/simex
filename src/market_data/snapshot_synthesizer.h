@@ -6,7 +6,7 @@
 
 #include "market_data/market_data_publisher.h"
 
-namespace Exchange {
+namespace simex::exchange {
 
 struct Snapshot final {
   std::uint64_t last_incremental_sequence = 0;
@@ -20,7 +20,7 @@ class SnapshotSynthesizer final {
 
  private:
   std::uint64_t last_incremental_sequence_ = 0;
-  std::unordered_map<Common::MarketOrderId, PublicMarketUpdate> live_orders_;
+  std::unordered_map<simex::common::MarketOrderId, PublicMarketUpdate> live_orders_;
 };
 
-}  // namespace Exchange
+}  // namespace simex::exchange

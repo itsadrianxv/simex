@@ -8,7 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace Common {
+namespace simex::common {
 namespace {
 
 using Json = nlohmann::json;
@@ -149,4 +149,4 @@ auto loadSimexConfig(const std::filesystem::path &path) -> SimexConfig {
   return config;
 }
 
-}  // namespace Common
+}  // namespace simex::common

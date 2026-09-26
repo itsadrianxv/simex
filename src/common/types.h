@@ -5,7 +5,7 @@
 
 #include "common/order_types.h"
 
-namespace Common {
+namespace simex::common {
 
 using Nanos = std::int64_t;
 using TradingDayId = std::uint32_t;
@@ -21,4 +21,4 @@ constexpr auto INVALID_TICKER_ID = std::numeric_limits<TickerId>::max();
 constexpr auto INVALID_ORDER_ID = std::numeric_limits<ClientOrderId>::max();
 constexpr auto INVALID_PRICE_TICKS = std::numeric_limits<PriceTicks>::max();
 
-}  // namespace Common
+}  // namespace simex::common

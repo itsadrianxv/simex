@@ -6,7 +6,7 @@
 #include "common/lf_queue.h"
 #include "exchange/messages.h"
 
-namespace Exchange {
+namespace simex::exchange {
 
 struct PublicMarketUpdate final {
   std::uint64_t sequence = 0;
@@ -27,4 +27,4 @@ class MarketDataPublisher final {
   std::uint64_t next_sequence_ = 1;
 };
 
-}  // namespace Exchange
+}  // namespace simex::exchange

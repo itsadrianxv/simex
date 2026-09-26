@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-namespace Common {
+namespace simex::common {
 
 /// A bounded single-producer/single-consumer queue for the first vertical slice.
 /// The queue reports full/empty explicitly and never overwrites unread data.
@@ -64,4 +64,4 @@ class LFQueue final {
   std::size_t size_ = 0;
 };
 
-}  // namespace Common
+}  // namespace simex::common

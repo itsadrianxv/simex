@@ -5,8 +5,8 @@
 
 namespace {
 
-auto instrument() -> Common::InstrumentConfig {
-  Common::InstrumentConfig config;
+auto instrument() -> simex::common::InstrumentConfig {
+  simex::common::InstrumentConfig config;
   config.symbol = "RB";
   config.profile = "test";
   config.exchange = "SHFE";
@@ -15,50 +15,50 @@ auto instrument() -> Common::InstrumentConfig {
   config.price_limit_percent = 0.10;
   config.max_price_levels = 1000;
   config.supported_order_combinations = {
-      {Common::OrderType::LIMIT, Common::TimeInForce::DAY},
-      {Common::OrderType::LIMIT, Common::TimeInForce::IOC},
-      {Common::OrderType::LIMIT, Common::TimeInForce::FOK},
-      {Common::OrderType::MARKET, Common::TimeInForce::DAY},
+      {simex::common::OrderType::LIMIT, simex::common::TimeInForce::DAY},
+      {simex::common::OrderType::LIMIT, simex::common::TimeInForce::IOC},
+      {simex::common::OrderType::LIMIT, simex::common::TimeInForce::FOK},
+      {simex::common::OrderType::MARKET, simex::common::TimeInForce::DAY},
   };
   return config;
 }
 
-auto order(Common::ClientId client_id, Common::ClientOrderId order_id,
-           Common::Side side, Common::PriceTicks price, Common::Nanos rx_time,
-           Common::Qty qty = 1) {
-  return Exchange::ClientRequest{Common::RequestType::NEW, client_id, 0, order_id, side,
-                                 Common::OrderType::LIMIT, Common::TimeInForce::DAY,
-                                 Common::PositionEffect::OPEN, price, qty, rx_time};
+auto order(simex::common::ClientId client_id, simex::common::ClientOrderId order_id,
+           simex::common::Side side, simex::common::PriceTicks price, simex::common::Nanos rx_time,
+           simex::common::Qty qty = 1) {
+  return simex::exchange::ClientRequest{simex::common::RequestType::NEW, client_id, 0, order_id, side,
+                                 simex::common::OrderType::LIMIT, simex::common::TimeInForce::DAY,
+                                 simex::common::PositionEffect::OPEN, price, qty, rx_time};
 }
 
 }  // namespace
 
 int main() {
-  Common::LFQueue<Exchange::ClientRequest> sequenced(1);
-  Exchange::FIFOSequencer sequencer(&sequenced);
-  assert(sequencer.addClientRequest(order(1, 1, Common::Side::BUY, 1000, 2)));
-  assert(sequencer.addClientRequest(order(1, 2, Common::Side::BUY, 1001, 1)));
+  simex::common::LFQueue<simex::exchange::ClientRequest> sequenced(1);
+  simex::exchange::FIFOSequencer sequencer(&sequenced);
+  assert(sequencer.addClientRequest(order(1, 1, simex::common::Side::BUY, 1000, 2)));
+  assert(sequencer.addClientRequest(order(1, 2, simex::common::Side::BUY, 1001, 1)));
   assert(!sequencer.sequenceAndPublish());
   assert(sequenced.empty());
 
-  Harness::ParticipantHarness harness(instrument());
+  simex::harness::ParticipantHarness harness(instrument());
   assert(harness.setReferencePrice(1000));
-  harness.setPhase(Common::SessionPhase::CONTINUOUS);
+  harness.setPhase(simex::common::SessionPhase::CONTINUOUS);
 
-  assert(harness.submit(order(2, 20, Common::Side::SELL, 1000, 1, 2)));
+  assert(harness.submit(order(2, 20, simex::common::Side::SELL, 1000, 1, 2)));
   assert(harness.drainResponses().size() == 1);
   harness.drainUpdates();
 
-  assert(harness.receive(order(1, 10, Common::Side::BUY, 1000, 2)));
+  assert(harness.receive(order(1, 10, simex::common::Side::BUY, 1000, 2)));
   assert(harness.flush());
   const auto responses = harness.drainResponses();
   assert(responses.size() == 3);
-  assert(responses[1].type == Common::ResponseType::FILLED);
-  assert(responses[2].type == Common::ResponseType::FILLED);
+  assert(responses[1].type == simex::common::ResponseType::FILLED);
+  assert(responses[2].type == simex::common::ResponseType::FILLED);
   const auto updates = harness.drainUpdates();
   assert(updates.size() == 2);
-  assert(updates[0].type == Common::MarketUpdateType::TRADE);
-  assert(updates[1].type == Common::MarketUpdateType::MODIFY);
+  assert(updates[0].type == simex::common::MarketUpdateType::TRADE);
+  assert(updates[1].type == simex::common::MarketUpdateType::MODIFY);
   const auto first_hash = harness.stateHash();
   assert(first_hash.rfind("sha256:", 0) == 0);
   const auto trace = harness.traceRecord();

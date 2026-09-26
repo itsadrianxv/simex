@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace Common {
+namespace simex::common {
 
 enum class Side : std::int8_t {
   BUY = 1,
@@ -103,4 +103,4 @@ constexpr auto sessionPhaseToString(SessionPhase phase) noexcept -> std::string_
   return "UNKNOWN";
 }
 
-}  // namespace Common
+}  // namespace simex::common

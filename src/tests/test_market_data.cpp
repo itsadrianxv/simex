@@ -4,11 +4,11 @@
 #include "market_data/snapshot_synthesizer.h"
 
 int main() {
-  Exchange::MarketUpdateQueue updates(8);
-  Exchange::MarketDataPublisher publisher(&updates);
-  Exchange::SnapshotSynthesizer snapshot;
+  simex::exchange::MarketUpdateQueue updates(8);
+  simex::exchange::MarketDataPublisher publisher(&updates);
+  simex::exchange::SnapshotSynthesizer snapshot;
 
-  assert(updates.tryPush({Common::MarketUpdateType::ADD, 0, 7, Common::Side::BUY,
+  assert(updates.tryPush({simex::common::MarketUpdateType::ADD, 0, 7, simex::common::Side::BUY,
                           1000, 3, 3, 1}));
   auto incremental = publisher.publishPending();
   assert(incremental.size() == 1);
@@ -16,7 +16,7 @@ int main() {
   snapshot.apply(incremental.front());
   assert(snapshot.synthesize().orders.size() == 1);
 
-  assert(updates.tryPush({Common::MarketUpdateType::MODIFY, 0, 7, Common::Side::BUY,
+  assert(updates.tryPush({simex::common::MarketUpdateType::MODIFY, 0, 7, simex::common::Side::BUY,
                           1000, 1, 1, 2}));
   incremental = publisher.publishPending();
   snapshot.apply(incremental.front());
@@ -24,7 +24,7 @@ int main() {
   assert(current.last_incremental_sequence == 2);
   assert(current.orders.front().update.qty == 1);
 
-  assert(updates.tryPush({Common::MarketUpdateType::CANCEL, 0, 7, Common::Side::BUY,
+  assert(updates.tryPush({simex::common::MarketUpdateType::CANCEL, 0, 7, simex::common::Side::BUY,
                           1000, 1, 0, 3}));
   incremental = publisher.publishPending();
   snapshot.apply(incremental.front());

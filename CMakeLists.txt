@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.25)
 
 project(simex LANGUAGES CXX)
 
-option(JEV_FETCH_NLOHMANN_JSON
+option(SIMEX_FETCH_NLOHMANN_JSON
        "Fetch nlohmann/json v3.11.3 when no system package is available"
        OFF)
 
@@ -10,15 +10,18 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_library(simex_warnings INTERFACE)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(simex_warnings INTERFACE
+    -Wall -Wextra -Wpedantic -Werror
+  )
 endif()
 
 include(FetchContent)
 
 find_package(nlohmann_json CONFIG QUIET)
 if(NOT nlohmann_json_FOUND)
-  if(JEV_FETCH_NLOHMANN_JSON)
+  if(SIMEX_FETCH_NLOHMANN_JSON)
     FetchContent_Declare(
       nlohmann_json
       URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
@@ -37,6 +40,7 @@ add_library(simex_common STATIC
 target_include_directories(simex_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(simex_common PUBLIC nlohmann_json::nlohmann_json)
 target_compile_features(simex_common PUBLIC cxx_std_20)
+target_link_libraries(simex_common PUBLIC simex_warnings)
 
 add_library(simex_exchange STATIC
   src/front_clearing/front_clearing.cpp
@@ -49,6 +53,7 @@ add_library(simex_exchange STATIC
 target_include_directories(simex_exchange PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(simex_exchange PUBLIC simex_common)
 target_compile_features(simex_exchange PUBLIC cxx_std_20)
+target_link_libraries(simex_exchange PUBLIC simex_warnings)
 
 add_library(simex_trace STATIC
   src/trace/trace.cpp
@@ -56,6 +61,7 @@ add_library(simex_trace STATIC
 target_include_directories(simex_trace PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(simex_trace PUBLIC simex_common OpenSSL::Crypto nlohmann_json::nlohmann_json)
 target_compile_features(simex_trace PUBLIC cxx_std_20)
+target_link_libraries(simex_trace PUBLIC simex_warnings)
 
 add_library(simex_harness STATIC
   src/participant_harness/participant_harness.cpp
@@ -63,13 +69,19 @@ add_library(simex_harness STATIC
 target_include_directories(simex_harness PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(simex_harness PUBLIC simex_exchange simex_trace)
 target_compile_features(simex_harness PUBLIC cxx_std_20)
+target_link_libraries(simex_harness PUBLIC simex_warnings)
 
-add_executable(simex_demo src/apps/simex_demo.cpp)
+add_executable(simex_demo src/main.cpp)
 target_link_libraries(simex_demo PRIVATE simex_exchange simex_trace)
 target_compile_features(simex_demo PRIVATE cxx_std_20)
+target_link_libraries(simex_demo PRIVATE simex_warnings)
 
 include(CTest)
 if(BUILD_TESTING)
+  # The current tests use assert for both checks and setup calls. Keep those
+  # assertions active in Release test builds until they are made side-effect free.
+  add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-UNDEBUG>)
+
   add_executable(test_virtual_clock src/tests/test_virtual_clock.cpp)
   target_link_libraries(test_virtual_clock PRIVATE simex_common)
   add_test(NAME virtual_clock COMMAND test_virtual_clock)

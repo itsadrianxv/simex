@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace Common {
+namespace simex::common {
 
 enum class ReasonCode : std::uint16_t {
   NONE,
@@ -59,4 +59,4 @@ constexpr auto reasonCodeToString(ReasonCode code) noexcept -> std::string_view 
   return "UNKNOWN";
 }
 
-}  // namespace Common
+}  // namespace simex::common

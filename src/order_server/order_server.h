@@ -4,13 +4,13 @@
 #include "exchange/messages.h"
 #include "order_server/fifo_sequencer.h"
 
-namespace Exchange {
+namespace simex::exchange {
 
 /// In-process order-server seam for the deterministic harness.
 /// TCP/epoll transport can be attached later without changing the sequencer.
 class OrderServer final {
  public:
-  explicit OrderServer(Common::LFQueue<ClientRequest> *outgoing_requests)
+  explicit OrderServer(simex::common::LFQueue<ClientRequest> *outgoing_requests)
       : sequencer_(outgoing_requests) {}
 
   auto receive(const ClientRequest &request) -> bool {
@@ -27,4 +27,4 @@ class OrderServer final {
   FIFOSequencer sequencer_;
 };
 
-}  // namespace Exchange
+}  // namespace simex::exchange

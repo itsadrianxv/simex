@@ -4,51 +4,51 @@
 #include "common/lf_queue.h"
 #include "common/types.h"
 
-namespace Exchange {
+namespace simex::exchange {
 
 struct ClientRequest final {
-  Common::RequestType type = Common::RequestType::NEW;
-  Common::ClientId client_id = Common::INVALID_CLIENT_ID;
-  Common::TickerId ticker_id = Common::INVALID_TICKER_ID;
-  Common::ClientOrderId client_order_id = Common::INVALID_ORDER_ID;
-  Common::Side side = Common::Side::BUY;
-  Common::OrderType order_type = Common::OrderType::LIMIT;
-  Common::TimeInForce time_in_force = Common::TimeInForce::DAY;
-  Common::PositionEffect position_effect = Common::PositionEffect::OPEN;
-  Common::PriceTicks price_ticks = Common::INVALID_PRICE_TICKS;
-  Common::Qty qty = 0;
-  Common::Nanos rx_time = 0;
+  simex::common::RequestType type = simex::common::RequestType::NEW;
+  simex::common::ClientId client_id = simex::common::INVALID_CLIENT_ID;
+  simex::common::TickerId ticker_id = simex::common::INVALID_TICKER_ID;
+  simex::common::ClientOrderId client_order_id = simex::common::INVALID_ORDER_ID;
+  simex::common::Side side = simex::common::Side::BUY;
+  simex::common::OrderType order_type = simex::common::OrderType::LIMIT;
+  simex::common::TimeInForce time_in_force = simex::common::TimeInForce::DAY;
+  simex::common::PositionEffect position_effect = simex::common::PositionEffect::OPEN;
+  simex::common::PriceTicks price_ticks = simex::common::INVALID_PRICE_TICKS;
+  simex::common::Qty qty = 0;
+  simex::common::Nanos rx_time = 0;
   auto operator==(const ClientRequest &) const noexcept -> bool = default;
 };
 
 struct ClientResponse final {
-  Common::ResponseType type = Common::ResponseType::REJECTED;
-  Common::ReasonCode reason = Common::ReasonCode::NONE;
-  Common::ClientId client_id = Common::INVALID_CLIENT_ID;
-  Common::TickerId ticker_id = Common::INVALID_TICKER_ID;
-  Common::ClientOrderId client_order_id = Common::INVALID_ORDER_ID;
-  Common::MarketOrderId market_order_id = Common::INVALID_ORDER_ID;
-  Common::Side side = Common::Side::BUY;
-  Common::PositionEffect position_effect = Common::PositionEffect::OPEN;
-  Common::PriceTicks price_ticks = Common::INVALID_PRICE_TICKS;
-  Common::Qty exec_qty = 0;
-  Common::Qty leaves_qty = 0;
+  simex::common::ResponseType type = simex::common::ResponseType::REJECTED;
+  simex::common::ReasonCode reason = simex::common::ReasonCode::NONE;
+  simex::common::ClientId client_id = simex::common::INVALID_CLIENT_ID;
+  simex::common::TickerId ticker_id = simex::common::INVALID_TICKER_ID;
+  simex::common::ClientOrderId client_order_id = simex::common::INVALID_ORDER_ID;
+  simex::common::MarketOrderId market_order_id = simex::common::INVALID_ORDER_ID;
+  simex::common::Side side = simex::common::Side::BUY;
+  simex::common::PositionEffect position_effect = simex::common::PositionEffect::OPEN;
+  simex::common::PriceTicks price_ticks = simex::common::INVALID_PRICE_TICKS;
+  simex::common::Qty exec_qty = 0;
+  simex::common::Qty leaves_qty = 0;
   auto operator==(const ClientResponse &) const noexcept -> bool = default;
 };
 
 struct MarketUpdate final {
-  Common::MarketUpdateType type = Common::MarketUpdateType::CANCEL;
-  Common::TickerId ticker_id = Common::INVALID_TICKER_ID;
-  Common::MarketOrderId market_order_id = Common::INVALID_ORDER_ID;
-  Common::Side side = Common::Side::BUY;
-  Common::PriceTicks price_ticks = Common::INVALID_PRICE_TICKS;
-  Common::Qty qty = 0;
-  Common::Qty leaves_qty = 0;
-  Common::Nanos rx_time = 0;
+  simex::common::MarketUpdateType type = simex::common::MarketUpdateType::CANCEL;
+  simex::common::TickerId ticker_id = simex::common::INVALID_TICKER_ID;
+  simex::common::MarketOrderId market_order_id = simex::common::INVALID_ORDER_ID;
+  simex::common::Side side = simex::common::Side::BUY;
+  simex::common::PriceTicks price_ticks = simex::common::INVALID_PRICE_TICKS;
+  simex::common::Qty qty = 0;
+  simex::common::Qty leaves_qty = 0;
+  simex::common::Nanos rx_time = 0;
   auto operator==(const MarketUpdate &) const noexcept -> bool = default;
 };
 
-using ClientResponseQueue = Common::LFQueue<ClientResponse>;
-using MarketUpdateQueue = Common::LFQueue<MarketUpdate>;
+using ClientResponseQueue = simex::common::LFQueue<ClientResponse>;
+using MarketUpdateQueue = simex::common::LFQueue<MarketUpdate>;
 
-}  // namespace Exchange
+}  // namespace simex::exchange

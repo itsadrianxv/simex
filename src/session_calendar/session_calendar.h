@@ -8,52 +8,52 @@
 #include "common/types.h"
 #include "common/virtual_clock.h"
 
-namespace Exchange {
+namespace simex::exchange {
 
 struct TradingDaySchedule final {
-  Common::TradingDayId trading_day = 0;
-  Common::PriceTicks previous_settlement_ticks = Common::INVALID_PRICE_TICKS;
+  simex::common::TradingDayId trading_day = 0;
+  simex::common::PriceTicks previous_settlement_ticks = simex::common::INVALID_PRICE_TICKS;
   bool night_session_enabled = true;
-  std::optional<Common::TradingDayId> night_session_date;
+  std::optional<simex::common::TradingDayId> night_session_date;
 };
 
 struct SessionTransition final {
-  Common::Nanos timestamp = 0;
-  Common::TradingDayId trading_day = 0;
-  Common::SessionPhase phase = Common::SessionPhase::CLOSED;
+  simex::common::Nanos timestamp = 0;
+  simex::common::TradingDayId trading_day = 0;
+  simex::common::SessionPhase phase = simex::common::SessionPhase::CLOSED;
 };
 
 /// Maps explicit trading-day schedules onto Asia/Shanghai virtual timestamps.
 class SessionCalendar final {
  public:
-  explicit SessionCalendar(Common::SessionTemplateConfig template_config);
+  explicit SessionCalendar(simex::common::SessionTemplateConfig template_config);
 
   auto addTradingDay(const TradingDaySchedule &schedule) -> bool;
-  auto scheduleInto(Common::VirtualClock &clock,
-                    Common::TradingDayId trading_day) const -> bool;
-  auto scheduleRollover(Common::VirtualClock &clock, Common::Nanos timestamp,
-                        Common::TradingDayId next_trading_day) const -> bool;
+  auto scheduleInto(simex::common::VirtualClock &clock,
+                    simex::common::TradingDayId trading_day) const -> bool;
+  auto scheduleRollover(simex::common::VirtualClock &clock, simex::common::Nanos timestamp,
+                        simex::common::TradingDayId next_trading_day) const -> bool;
   auto clear() noexcept -> void;
 
-  [[nodiscard]] auto phaseAt(Common::Nanos timestamp) const noexcept
-      -> Common::SessionPhase;
-  [[nodiscard]] auto nextTransitionAfter(Common::Nanos timestamp) const
+  [[nodiscard]] auto phaseAt(simex::common::Nanos timestamp) const noexcept
+      -> simex::common::SessionPhase;
+  [[nodiscard]] auto nextTransitionAfter(simex::common::Nanos timestamp) const
       -> std::optional<SessionTransition>;
-  [[nodiscard]] auto scheduleFor(Common::TradingDayId trading_day) const
+  [[nodiscard]] auto scheduleFor(simex::common::TradingDayId trading_day) const
       -> const TradingDaySchedule *;
 
   struct Interval final {
-    Common::Nanos start = 0;
-    Common::Nanos end = 0;
-    Common::TradingDayId trading_day = 0;
-    Common::SessionPhase phase = Common::SessionPhase::CLOSED;
+    simex::common::Nanos start = 0;
+    simex::common::Nanos end = 0;
+    simex::common::TradingDayId trading_day = 0;
+    simex::common::SessionPhase phase = simex::common::SessionPhase::CLOSED;
   };
 
  private:
 
-  Common::SessionTemplateConfig template_config_;
+  simex::common::SessionTemplateConfig template_config_;
   std::vector<TradingDaySchedule> schedules_;
   std::vector<Interval> intervals_;
 };
 
-}  // namespace Exchange
+}  // namespace simex::exchange
