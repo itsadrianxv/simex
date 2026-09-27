@@ -89,6 +89,27 @@ void deterministicAndSessionGating() {
   assert(first.tick(1, simex::common::SessionPhase::BREAK).empty());
 }
 
+void quoteSpreadIsTotalBboWidth() {
+  auto one_tick_config = config();
+  one_tick_config.quote_spread_ticks = 1;
+  simex::participant::ParticipantSimulator one_tick(instrument(), one_tick_config, 1000);
+  const auto one_tick_quotes = one_tick.tick(0, simex::common::SessionPhase::CONTINUOUS);
+  assert(one_tick_quotes.size() == 2);
+  assert(one_tick_quotes[0].side == simex::common::Side::BUY);
+  assert(one_tick_quotes[1].side == simex::common::Side::SELL);
+  assert(one_tick_quotes[1].price_ticks - one_tick_quotes[0].price_ticks == 1);
+  assert(one_tick_quotes[0].price_ticks == 1000);
+  assert(one_tick_quotes[1].price_ticks == 1001);
+
+  auto two_tick_config = config();
+  simex::participant::ParticipantSimulator two_tick(instrument(), two_tick_config, 1000);
+  const auto two_tick_quotes = two_tick.tick(0, simex::common::SessionPhase::CONTINUOUS);
+  assert(two_tick_quotes.size() == 2);
+  assert(two_tick_quotes[1].price_ticks - two_tick_quotes[0].price_ticks == 2);
+  assert(two_tick_quotes[0].price_ticks == 999);
+  assert(two_tick_quotes[1].price_ticks == 1001);
+}
+
 void responseStateAndTtlReplacement() {
   auto simulator_config = config();
   simulator_config.orders_per_second = 1'000'000'000;
@@ -192,6 +213,7 @@ void grossPositionLimit() {
 
 int main() {
   deterministicAndSessionGating();
+  quoteSpreadIsTotalBboWidth();
   responseStateAndTtlReplacement();
   bboDrivenTakerAndDistinctClientIds();
   grossPositionLimit();
