@@ -104,6 +104,21 @@ target_link_libraries(simex_demo PRIVATE simex_exchange simex_trace)
 target_compile_features(simex_demo PRIVATE cxx_std_20)
 target_link_libraries(simex_demo PRIVATE simex_warnings)
 
+if(UNIX)
+  add_library(simex_tui_core STATIC
+    src/tui/market_observer.cpp
+    src/tui/terminal_ui.cpp
+  )
+  target_include_directories(simex_tui_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  target_link_libraries(simex_tui_core PUBLIC simex_warnings)
+  target_compile_features(simex_tui_core PUBLIC cxx_std_20)
+
+  add_executable(simex_tui src/simex_tui.cpp)
+  target_link_libraries(simex_tui PRIVATE simex_tui_core)
+  target_compile_features(simex_tui PRIVATE cxx_std_20)
+  target_link_libraries(simex_tui PRIVATE simex_warnings)
+endif()
+
 include(CTest)
 if(BUILD_TESTING)
   # The current tests use assert for both checks and setup calls. Keep those
@@ -167,4 +182,12 @@ if(BUILD_TESTING)
   add_executable(test_exchange_service src/tests/test_exchange_service.cpp)
   target_link_libraries(test_exchange_service PRIVATE simex_transport)
   add_test(NAME exchange_service COMMAND test_exchange_service)
+endif()
+
+if(UNIX AND BUILD_TESTING)
+  add_executable(test_tui_observer src/tests/test_tui_observer.cpp)
+  target_link_libraries(test_tui_observer PRIVATE simex_tui_core)
+  add_test(NAME tui_observer COMMAND test_tui_observer)
+  add_test(NAME tui_e2e COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/tui_e2e.sh
+           $<TARGET_FILE:simex_server> $<TARGET_FILE:simex_tui> ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
