@@ -1,4 +1,5 @@
 {
+  "phase_override": "CONTINUOUS",
   "instrument_config": "simex.json",
   "reference_price": 3500,
   "trading_day": 20260926,
