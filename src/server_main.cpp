@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "common/config.h"
+#include "common/order_types.h"
 #include "participant_simulator/participant_simulator.h"
 #include "session_calendar/session_calendar.h"
 #include "transport/exchange_service.h"
@@ -69,6 +70,19 @@ auto validateParticipantClientRange(const simex::participant::ParticipantSimulat
   const auto last = first + count - 1;
   return static_cast<std::uint64_t>(external_client) < first ||
          static_cast<std::uint64_t>(external_client) > last;
+}
+
+auto parsePhaseOverride(const Json &document)
+    -> std::optional<simex::common::SessionPhase> {
+  // TODO(simex-phase-override): Support additional pinned phases and
+  // time-windowed overrides when a use case demands them. The first version
+  // accepts a single value and pins it for the whole run.
+  if (!document.contains("phase_override")) return std::nullopt;
+  const auto &value = document.at("phase_override");
+  if (!value.is_string() || value.get<std::string>() != "CONTINUOUS") {
+    throw std::runtime_error("phase_override only supports the value CONTINUOUS");
+  }
+  return simex::common::SessionPhase::CONTINUOUS;
 }
 
 auto scheduleCurrentTradingDay(const simex::common::SimexConfig &instrument_config,
@@ -131,7 +145,16 @@ int main(int argc, char** argv) {
       throw std::runtime_error("participant simulator client ID range overlaps external client");
     }
     const auto instrument_config = simex::common::loadSimexConfig(instrument_path);
-    scheduleCurrentTradingDay(instrument_config, &config, config.runtime.initial_time);
+    const auto phase_override = parsePhaseOverride(document);
+    if (phase_override) {
+      // A pinned phase suspends the session state machine: no transition
+      // events are scheduled and the venue stays in the override phase until
+      // the process exits. The exit paths (max_run_seconds, signals, peer
+      // disconnect) remain unchanged.
+      config.runtime.initial_phase = *phase_override;
+    } else {
+      scheduleCurrentTradingDay(instrument_config, &config, config.runtime.initial_time);
+    }
     config.snapshot_interval = std::chrono::milliseconds(snapshot_ms);
     std::signal(SIGINT, onSignal);
     std::signal(SIGTERM, onSignal);
@@ -142,7 +165,9 @@ int main(int argc, char** argv) {
     if (!service.start()) throw std::runtime_error("Cannot start simex transport service");
     std::cout << "event=simex_ready tcp_port=" << service.tcpPort()
               << " udp_port=" << udp_port << " client_id=" << client
-              << " clock=REALTIME trading_day=" << config.runtime.trading_day << std::endl;
+              << " clock=REALTIME trading_day=" << config.runtime.trading_day
+              << " phase=" << simex::common::sessionPhaseToString(config.runtime.initial_phase)
+              << " override=" << (phase_override ? 1 : 0) << std::endl;
     const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(max_run_seconds);
     while (!stopping && std::chrono::steady_clock::now() < deadline) {
       if (service.sessionEnded()) break;
