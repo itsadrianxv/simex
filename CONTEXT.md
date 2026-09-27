@@ -121,6 +121,9 @@ A stable machine-readable explanation attached to a rejected order or cancellati
 **Session calendar**:
 The instrument-specific schedule that maps virtual timestamps to trading phases, breaks, auction windows, and trading-day boundaries. It supplies events to `VirtualClock` rather than being embedded in the clock.
 
+**Phase override**:
+A configuration that pins the venue to a single trading phase for an entire run, suspending scheduled session transitions. The first override value pins continuous matching so experiments see an always-open book. _Avoid_: Run mode; the override changes session state only, and clock behavior remains separate.
+
 **Normalized event trace**:
 The UTF-8 JSON replay record containing canonical requests, virtual-time events, private responses, public market updates, and the final state hash. Private responses and public updates remain separate streams and are recorded in their own production order; the first version does not invent a cross-stream ordering. It is a test and verification artifact, not a network capture or durable recovery journal.
 

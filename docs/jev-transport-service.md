@@ -14,6 +14,8 @@ The checked-in `server.json` enables the in-process `participant_simulator` with
 
 The launcher currently schedules the remaining phases of the configured trading day. Keep a run within that configured day; holiday-aware next-day calendar and rollover scheduling remain future work.
 
+The optional `phase_override` field in server.json pins the venue to one trading phase for the whole run instead of following the calendar: `"phase_override": "CONTINUOUS"` starts with an always-open continuous book and schedules no phase transitions, while the exit paths (max_run_seconds, SIGINT/SIGTERM, peer disconnect) stay unchanged. The only supported value is `CONTINUOUS`; any other value aborts startup. Without the field the launcher keeps the calendar behavior described above. The `event=simex_ready` line always reports the effective phase and whether an override is active (`phase=<PHASE> override=<0|1>`).
+
 The Jev adapter shares the v1 protocol definitions directly. V1 is a native little-endian 64-bit Linux ABI, now checked by size/offset assertions. Relative protocol-header includes prevent collisions with the participant repository's similarly named common/types.h. The payload format has not changed.
 
 Companion fixes required for the independent process integration:
