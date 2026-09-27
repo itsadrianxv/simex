@@ -1,6 +1,8 @@
 # simex
 
-simex is short for SIMulated EXchange. It's a C++ trading exchange-side program with an SHFE-style RB futures profile.
+simex (SIMulated EXchange) is a SHFE-style C++ trading exchange, with simulated market participant order flows and a TUI to monitor changes to the order book.
+
+![alt text](assets/image.png)
 
 ## Quick Start
 
@@ -39,7 +41,7 @@ Run the deterministic demo with:
 
 ## Note
 
-For the standalone localhost TCP/UDP service used by Jev, see [the transport service guide](docs/jev-transport-service.md). The service starts with an empty book; market-data and counterparty generation are separate work.
+The exchange could run alongside my market-participant-side trading system [jev-qaunt](https://github.com/itsadrianxv/jev-quant) to form a complete trading ecosystem. Check out [the transport service guide](docs/jev-transport-service.md) for more detail.
 
 I am very, very early in this project. Expect bugs.
 
