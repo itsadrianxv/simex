@@ -97,6 +97,15 @@ target_link_libraries(simex_transport PUBLIC simex_exchange simex_runtime)
 target_compile_features(simex_transport PUBLIC cxx_std_20)
 target_link_libraries(simex_transport PUBLIC simex_warnings)
 
+if(UNIX)
+  add_library(simex_participant_client STATIC
+    src/participant_client/participant_client.cpp
+  )
+  target_include_directories(simex_participant_client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+  target_link_libraries(simex_participant_client PUBLIC simex_exchange simex_warnings)
+  target_compile_features(simex_participant_client PUBLIC cxx_std_20)
+endif()
+
 add_executable(simex_demo src/main.cpp)
 add_executable(simex_server src/server_main.cpp)
 target_link_libraries(simex_server PRIVATE simex_transport)
@@ -176,6 +185,12 @@ if(BUILD_TESTING)
   add_executable(test_transport src/tests/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE simex_transport)
   add_test(NAME transport COMMAND test_transport)
+
+  if(UNIX)
+    add_executable(test_participant_client src/tests/test_participant_client.cpp)
+    target_link_libraries(test_participant_client PRIVATE simex_participant_client)
+    add_test(NAME participant_client COMMAND test_participant_client)
+  endif()
 endif()
 
 if(BUILD_TESTING)
