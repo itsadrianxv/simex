@@ -1,5 +1,7 @@
 # simex
 
+[中文](./README_ZH.md)
+
 simex (SIMulated EXchange) is a SHFE-style C++ trading exchange, with simulated market participant order flows and a TUI to monitor changes to the order book.
 
 ![alt text](assets/image.png)
