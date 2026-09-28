@@ -37,6 +37,8 @@ struct ParticipantSimulatorConfig final {
   simex::common::PriceTicks fair_value_reversion_ticks = 1;
 
   std::size_t quote_levels = 1;
+  /// Total bid-ask width in ticks.  With an odd width, the extra tick is
+  /// placed on the ask side because prices and fair value are integer ticks.
   simex::common::PriceTicks quote_spread_ticks = 2;
   simex::common::Nanos quote_ttl_nanos = 5'000'000'000;
   simex::common::Qty min_qty = 1;

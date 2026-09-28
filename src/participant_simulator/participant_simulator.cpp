@@ -482,12 +482,12 @@ auto ParticipantSimulator::quotePrice(simex::common::Side side, std::size_t leve
   if (fair_value_ticks_ == simex::common::INVALID_PRICE_TICKS) {
     return simex::common::INVALID_PRICE_TICKS;
   }
-  const auto tick = instrument_.tick_size;
-  const auto half_spread = std::max<simex::common::PriceTicks>(
-      tick, config_.quote_spread_ticks / 2);
-  const auto distance = half_spread + safeMultiply(std::max<simex::common::PriceTicks>(tick,
-                                                                                         config_.quote_spread_ticks),
-                                                    level);
+  const auto bid_distance = config_.quote_spread_ticks / 2;
+  const auto ask_distance = config_.quote_spread_ticks - bid_distance;
+  const auto level_distance = safeMultiply(config_.quote_spread_ticks, level);
+  const auto distance = side == simex::common::Side::BUY
+                            ? bid_distance + level_distance
+                            : ask_distance + level_distance;
   const auto raw = side == simex::common::Side::BUY ? fair_value_ticks_ - distance
                                                      : fair_value_ticks_ + distance;
   return clampPrice(raw);
