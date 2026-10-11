@@ -25,7 +25,7 @@ class LFQueue final {
   auto operator=(LFQueue &&) -> LFQueue & = delete;
 
   [[nodiscard]] auto capacity() const noexcept -> std::size_t { return capacity_; }
-  [[nodiscard]] auto size() const noexcept -> std::size_t { return size_.load(std::memory_order_acquire); }
+  [[nodiscard]] auto size() const noexcept -> std::size_t { return size_.load(); }
   [[nodiscard]] auto empty() const noexcept -> bool { return size() == 0; }
   [[nodiscard]] auto full() const noexcept -> bool { return size() == capacity_; }
 
@@ -35,7 +35,7 @@ class LFQueue final {
     }
     slots_[write_index_] = value;
     write_index_ = (write_index_ + 1) % capacity_;
-    size_.fetch_add(1, std::memory_order_release);
+    size_.fetch_add(1);
     return true;
   }
 
@@ -45,7 +45,7 @@ class LFQueue final {
     }
     slots_[write_index_] = std::move(value);
     write_index_ = (write_index_ + 1) % capacity_;
-    size_.fetch_add(1, std::memory_order_release);
+    size_.fetch_add(1);
     return true;
   }
 
@@ -56,7 +56,7 @@ class LFQueue final {
     *value = std::move(*slots_[read_index_]);
     slots_[read_index_].reset();
     read_index_ = (read_index_ + 1) % capacity_;
-    size_.fetch_sub(1, std::memory_order_release);
+    size_.fetch_sub(1);
     return true;
   }
 
