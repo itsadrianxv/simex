@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <variant>
@@ -73,7 +74,7 @@ class ParticipantClient final {
 
  private:
   class Impl;
-  Impl *impl_ = nullptr;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace simex::participant

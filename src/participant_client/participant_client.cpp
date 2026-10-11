@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <cstring>
 #include <deque>
+#include <memory>
 #include <mutex>
 #include <netdb.h>
 #include <poll.h>
@@ -284,8 +285,8 @@ class ParticipantClient::Impl final {
   std::size_t tcp_buffer_size_ = 0;
 };
 
-ParticipantClient::ParticipantClient(ClientConfig config) : impl_(new Impl(std::move(config))) {}
-ParticipantClient::~ParticipantClient() { delete impl_; }
+ParticipantClient::ParticipantClient(ClientConfig config) : impl_(std::make_unique<Impl>(std::move(config))) {}
+ParticipantClient::~ParticipantClient() = default;
 auto ParticipantClient::connect() -> bool { return impl_->connect(); }
 auto ParticipantClient::close() -> void { impl_->close(); }
 auto ParticipantClient::connected() const noexcept -> bool { return impl_->connected(); }
