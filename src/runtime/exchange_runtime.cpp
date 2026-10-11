@@ -21,7 +21,7 @@ auto ExchangeRuntime::start() -> bool {
   RuntimeState expected = RuntimeState::CREATED;
   if (!state_.compare_exchange_strong(expected, RuntimeState::STARTING)) return false;
   stop_requested_.store(false);
-  thread_ = std::thread([this] { run(); });
+  thread_ = std::jthread([this] { run(); });
   while (state_.load() == RuntimeState::STARTING) std::this_thread::yield();
   return ready();
 }

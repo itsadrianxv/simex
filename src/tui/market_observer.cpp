@@ -31,7 +31,7 @@ auto MarketObserver::start() -> bool {
     return false;
   }
   stopping_.store(false);
-  thread_ = std::thread([this] { run(); });
+  thread_ = std::jthread([this] { run(); });
   return true;
 }
 

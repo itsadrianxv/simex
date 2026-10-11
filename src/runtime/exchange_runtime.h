@@ -105,7 +105,8 @@ class ExchangeRuntime final {
   std::uint64_t market_sequence_ = 0;
   std::atomic<RuntimeState> state_{RuntimeState::CREATED};
   std::atomic<bool> stop_requested_{false};
-  std::thread thread_;
+  // TODO: replace stop_requested_/stopping_ flags with std::stop_token plumbing.
+  std::jthread thread_;
   std::chrono::steady_clock::time_point realtime_origin_{};
   simex::common::Nanos current_time_ = 0;
 };

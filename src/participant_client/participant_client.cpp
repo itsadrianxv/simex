@@ -116,7 +116,7 @@ class ParticipantClient::Impl final {
     }
     stopping_ = false;
     connected_ = true;
-    thread_ = std::thread([this] { run(); });
+    thread_ = std::jthread([this] { run(); });
     return true;
   }
 
@@ -274,7 +274,8 @@ class ParticipantClient::Impl final {
   std::condition_variable condition_;
   std::deque<simex::exchange::ClientRequest> requests_;
   std::deque<Event> events_;
-  std::thread thread_;
+  // TODO: replace stopping_ flag with std::stop_token plumbing.
+  std::jthread thread_;
   int tcp_fd_ = -1;
   int udp_fd_ = -1;
   bool stopping_ = false;

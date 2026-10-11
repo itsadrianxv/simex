@@ -22,7 +22,7 @@ auto UdpMarketDataPublisher::start(UpdateSource updates, SnapshotSource snapshot
   updates_ = std::move(updates); snapshots_ = std::move(snapshots); legacy_snapshots_ = {};
   socket_ = ::socket(AF_INET, SOCK_DGRAM, 0);
   if (socket_ < 0) return false;
-  stopping_.store(false); healthy_.store(true); thread_ = std::thread([this] { run(); }); return true;
+  stopping_.store(false); healthy_.store(true); thread_ = std::jthread([this] { run(); }); return true;
 #endif
 }
 auto UdpMarketDataPublisher::start(UpdateSource updates, LegacySnapshotSource snapshots) -> bool {
@@ -33,7 +33,7 @@ auto UdpMarketDataPublisher::start(UpdateSource updates, LegacySnapshotSource sn
   updates_ = std::move(updates); snapshots_ = {}; legacy_snapshots_ = std::move(snapshots);
   socket_ = ::socket(AF_INET, SOCK_DGRAM, 0);
   if (socket_ < 0) return false;
-  stopping_.store(false); healthy_.store(true); thread_ = std::thread([this] { run(); }); return true;
+  stopping_.store(false); healthy_.store(true); thread_ = std::jthread([this] { run(); }); return true;
 #endif
 }
 auto UdpMarketDataPublisher::stop() -> void {

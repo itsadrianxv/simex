@@ -36,7 +36,7 @@ auto TcpOrderGateway::start(RequestHandler handler, ResponseSource source) -> bo
   stopping_.store(false);
   healthy_.store(true);
   peer_closed_.store(false);
-  thread_ = std::thread([this] { run(); });
+  thread_ = std::jthread([this] { run(); });
   return true;
 }
 

@@ -33,7 +33,8 @@ class TcpOrderGateway final {
   std::atomic<bool> stopping_{false};
   std::atomic<bool> healthy_{true};
   std::atomic<bool> peer_closed_{false};
-  std::thread thread_;
+  // TODO: replace stopping_ flag with std::stop_token plumbing.
+  std::jthread thread_;
   int listen_fd_ = -1;
 };
 

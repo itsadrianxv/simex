@@ -65,7 +65,8 @@ class MarketObserver final {
   std::uint16_t port_ = 0;
   int socket_ = -1;
   std::atomic<bool> stopping_{false};
-  std::thread thread_;
+  // TODO: replace stopping_ flag with std::stop_token plumbing.
+  std::jthread thread_;
   mutable std::mutex mutex_;
   ObserverView view_;
   std::unordered_map<simex::common::MarketOrderId, ObservedOrder> orders_;
