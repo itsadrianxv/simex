@@ -10,7 +10,7 @@
 static auto instrument() -> simex::common::InstrumentConfig {
   simex::common::InstrumentConfig config;
   config.symbol = "RB"; config.exchange = "SHFE"; config.tick_size = 1;
-  config.price_limit_percent = 0.1; config.max_price_levels = 1000;
+  config.price_limit_percent = 0.1; config.max_price_levels = 1000; config.max_open_orders = 4096;
   config.supported_order_combinations = {{simex::common::OrderType::LIMIT, simex::common::TimeInForce::DAY}};
   return config;
 }

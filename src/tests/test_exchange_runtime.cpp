@@ -4,7 +4,7 @@
 #include "runtime/exchange_runtime.h"
 
 static auto instrument() -> simex::common::InstrumentConfig {
-  simex::common::InstrumentConfig c; c.symbol = "RB"; c.exchange = "SHFE"; c.tick_size = 1; c.price_limit_percent = 0.1; c.max_price_levels = 1000; c.supported_order_combinations = {{simex::common::OrderType::LIMIT, simex::common::TimeInForce::DAY}}; return c;
+  simex::common::InstrumentConfig c; c.symbol = "RB"; c.exchange = "SHFE"; c.tick_size = 1; c.price_limit_percent = 0.1; c.max_price_levels = 1000; c.max_open_orders = 4096; c.supported_order_combinations = {{simex::common::OrderType::LIMIT, simex::common::TimeInForce::DAY}}; return c;
 }
 int main() {
   // Exercise publication and slot reuse across actual producer/consumer threads.

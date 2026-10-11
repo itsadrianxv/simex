@@ -10,6 +10,7 @@ int main(int argc, char **argv) {
   assert(config.instrument.symbol == "RB");
   assert(config.instrument.tick_size == 1);
   assert(config.instrument.max_price_levels == 4096);
+  assert(config.instrument.max_open_orders == 65536);
   assert(config.instrument.supported_order_combinations.size() == 4);
   assert(config.session_template.night.size() == 3);
   assert(config.session_template.day.size() == 8);

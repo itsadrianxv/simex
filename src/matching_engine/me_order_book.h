@@ -1,13 +1,13 @@
 #pragma once
 
 #include <cstddef>
-#include <list>
 #include <optional>
 #include <set>
 #include <unordered_map>
 #include <vector>
 
 #include "common/config.h"
+#include "common/mem_pool.h"
 #include "exchange/messages.h"
 
 namespace simex::exchange {
@@ -31,6 +31,10 @@ struct MatchResult final {
 };
 
 /// One instrument's price-time-priority resting order book.
+///
+/// Resting orders live in simex::common::MemPool<OrderNode> blocks and are
+/// chained through intrusive doubly-linked lists, one per price level, so the
+/// steady-state add/cancel/fill path performs no heap allocation.
 class MEOrderBook final {
  public:
   explicit MEOrderBook(simex::common::InstrumentConfig config);
@@ -56,6 +60,15 @@ class MEOrderBook final {
   auto drain() -> std::vector<RestingOrder>;
 
  private:
+  /// Pool-allocated node wrapping a resting order plus its intrusive-list
+  /// linkage. RestingOrder itself stays trivially copyable so value copies
+  /// (snapshot, PassiveFill) never carry dangling list pointers.
+  struct OrderNode final {
+    RestingOrder order;
+    OrderNode *prev = nullptr;
+    OrderNode *next = nullptr;
+  };
+
   struct ClientKey final {
     simex::common::ClientId client_id = simex::common::INVALID_CLIENT_ID;
     simex::common::ClientOrderId client_order_id = simex::common::INVALID_ORDER_ID;
@@ -72,22 +85,22 @@ class MEOrderBook final {
   struct PriceLevel final {
     simex::common::PriceTicks price = simex::common::INVALID_PRICE_TICKS;
     simex::common::Side side = simex::common::Side::BUY;
-    std::list<RestingOrder> orders;
+    OrderNode *head = nullptr;
+    OrderNode *tail = nullptr;
   };
 
   struct Location final {
     simex::common::PriceTicks price = simex::common::INVALID_PRICE_TICKS;
-    std::list<RestingOrder>::iterator iterator;
+    OrderNode *node = nullptr;
   };
 
   [[nodiscard]] auto priceIndex(simex::common::PriceTicks price) const noexcept
       -> std::optional<std::size_t>;
-  auto removeIterator(simex::common::PriceTicks price,
-                      std::list<RestingOrder>::iterator iterator)
-      -> RestingOrder;
+  auto removeNode(simex::common::PriceTicks price, OrderNode *node) -> RestingOrder;
   auto clearLevelIfEmpty(simex::common::PriceTicks price, simex::common::Side side) -> void;
 
   simex::common::InstrumentConfig config_;
+  simex::common::MemPool<OrderNode> orders_pool_;
   simex::common::PriceTicks lower_tick_ = 0;
   simex::common::PriceTicks upper_tick_ = 0;
   bool has_price_band_ = false;

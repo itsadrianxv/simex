@@ -113,8 +113,10 @@ auto loadSimexConfig(const std::filesystem::path &path) -> SimexConfig {
   config.instrument.contract_size_tons = requireField(instrument, "contract_size_tons").get<Qty>();
   config.instrument.tick_size = requireField(instrument, "tick_size").get<PriceTicks>();
   config.instrument.max_price_levels = requireField(instrument, "max_price_levels").get<std::size_t>();
+  config.instrument.max_open_orders = requireField(instrument, "max_open_orders").get<std::size_t>();
   config.instrument.price_limit_percent = requireField(requireField(instrument, "price_limit"), "absolute_percent").get<double>();
   if (config.instrument.tick_size <= 0 || config.instrument.max_price_levels == 0 ||
+      config.instrument.max_open_orders == 0 ||
       config.instrument.contract_size_tons == 0 ||
       !std::isfinite(config.instrument.price_limit_percent) ||
       config.instrument.price_limit_percent <= 0.0) {

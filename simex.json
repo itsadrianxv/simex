@@ -26,6 +26,7 @@
       "out_of_range": "REJECT"
     },
     "max_price_levels": 4096,
+    "max_open_orders": 65536,
     "price_limit": {
       "basis": "PREVIOUS_SETTLEMENT",
       "absolute_percent": 0.03,

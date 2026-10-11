@@ -37,6 +37,7 @@ struct InstrumentConfig final {
   PriceTicks tick_size = 0;
   double price_limit_percent = 0.0;
   std::size_t max_price_levels = 0;
+  std::size_t max_open_orders = 0;
   PriceTicks price_index_base_offset = 0;
   std::vector<OrderCombination> supported_order_combinations;
   std::vector<OrderType> auction_allowed_order_types;

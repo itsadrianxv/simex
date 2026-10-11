@@ -7,7 +7,9 @@
 namespace simex::exchange {
 
 MEOrderBook::MEOrderBook(simex::common::InstrumentConfig config)
-    : config_(std::move(config)), levels_(config_.max_price_levels) {}
+    : config_(std::move(config)),
+      orders_pool_(config_.max_open_orders),
+      levels_(config_.max_price_levels) {}
 
 auto MEOrderBook::setPriceBand(simex::common::PriceTicks lower_tick,
                                simex::common::PriceTicks upper_tick) -> bool {
@@ -40,7 +42,7 @@ auto MEOrderBook::add(RestingOrder order) -> bool {
   }
 
   auto &level = levels_[*index];
-  if (level.orders.empty()) {
+  if (level.head == nullptr) {
     level.price = order.request.price_ticks;
     level.side = order.request.side;
     if (order.request.side == simex::common::Side::BUY) {
@@ -52,25 +54,47 @@ auto MEOrderBook::add(RestingOrder order) -> bool {
     return false;
   }
 
-  auto insert_before = level.orders.end();
-  for (auto iterator = level.orders.begin(); iterator != level.orders.end(); ++iterator) {
-    if (order.request.rx_time < iterator->request.rx_time ||
-        (order.request.rx_time == iterator->request.rx_time &&
-         order.arrival_index < iterator->arrival_index)) {
+  // TODO(hft): O(n) time-priority insertion scan per add; replace with
+  // append-at-tail plus arrival_index resolution at match time.
+  auto *insert_before = static_cast<OrderNode *>(nullptr);
+  for (auto *iterator = level.head; iterator != nullptr; iterator = iterator->next) {
+    if (order.request.rx_time < iterator->order.request.rx_time ||
+        (order.request.rx_time == iterator->order.request.rx_time &&
+         order.arrival_index < iterator->order.arrival_index)) {
       insert_before = iterator;
       break;
     }
   }
-  auto iterator = level.orders.insert(insert_before, std::move(order));
-  const auto market_order_id = iterator->market_order_id;
-  market_orders_.emplace(market_order_id, Location{iterator->request.price_ticks, iterator});
-  client_orders_.emplace(client_key, market_order_id);
+
+  auto *node = orders_pool_.allocate(order);
+  if (insert_before == nullptr) {
+    node->prev = level.tail;
+    node->next = nullptr;
+    if (level.tail != nullptr) {
+      level.tail->next = node;
+    } else {
+      level.head = node;
+    }
+    level.tail = node;
+  } else {
+    node->prev = insert_before->prev;
+    node->next = insert_before;
+    if (insert_before->prev != nullptr) {
+      insert_before->prev->next = node;
+    } else {
+      level.head = node;
+    }
+    insert_before->prev = node;
+  }
+
+  market_orders_.emplace(order.market_order_id, Location{order.request.price_ticks, node});
+  client_orders_.emplace(client_key, order.market_order_id);
   return true;
 }
 
 auto MEOrderBook::clearLevelIfEmpty(simex::common::PriceTicks price, simex::common::Side side) -> void {
   const auto index = priceIndex(price);
-  if (!index || !levels_[*index].orders.empty()) return;
+  if (!index || levels_[*index].head != nullptr) return;
   levels_[*index].price = simex::common::INVALID_PRICE_TICKS;
   if (side == simex::common::Side::BUY) {
     bid_prices_.erase(price);
@@ -79,14 +103,22 @@ auto MEOrderBook::clearLevelIfEmpty(simex::common::PriceTicks price, simex::comm
   }
 }
 
-auto MEOrderBook::removeIterator(simex::common::PriceTicks price,
-                                 std::list<RestingOrder>::iterator iterator)
-    -> RestingOrder {
+auto MEOrderBook::removeNode(simex::common::PriceTicks price, OrderNode *node) -> RestingOrder {
   auto &level = levels_[*priceIndex(price)];
-  const auto client_key = ClientKey{iterator->request.client_id, iterator->request.client_order_id};
-  const auto market_order_id = iterator->market_order_id;
-  RestingOrder result = *iterator;
-  level.orders.erase(iterator);
+  const auto client_key = ClientKey{node->order.request.client_id, node->order.request.client_order_id};
+  const auto market_order_id = node->order.market_order_id;
+  RestingOrder result = node->order;
+  if (node->prev != nullptr) {
+    node->prev->next = node->next;
+  } else {
+    level.head = node->next;
+  }
+  if (node->next != nullptr) {
+    node->next->prev = node->prev;
+  } else {
+    level.tail = node->prev;
+  }
+  orders_pool_.deallocate(node);
   market_orders_.erase(market_order_id);
   client_orders_.erase(client_key);
   clearLevelIfEmpty(price, result.request.side);
@@ -97,7 +129,7 @@ auto MEOrderBook::remove(simex::common::MarketOrderId market_order_id)
     -> std::optional<RestingOrder> {
   const auto found = market_orders_.find(market_order_id);
   if (found == market_orders_.end()) return std::nullopt;
-  return removeIterator(found->second.price, found->second.iterator);
+  return removeNode(found->second.price, found->second.node);
 }
 
 auto MEOrderBook::cancel(simex::common::ClientId client_id,
@@ -127,22 +159,22 @@ auto MEOrderBook::availableQuantity(simex::common::Side aggressive_side,
     for (const auto price : ask_prices_) {
       if (!crosses(price)) break;
       const auto &level = levels_[*priceIndex(price)];
-      for (const auto &order : level.orders) {
-        if (std::numeric_limits<simex::common::Qty>::max() - quantity < order.leaves_qty) {
+      for (auto *node = level.head; node != nullptr; node = node->next) {
+        if (std::numeric_limits<simex::common::Qty>::max() - quantity < node->order.leaves_qty) {
           return std::numeric_limits<simex::common::Qty>::max();
         }
-        quantity += order.leaves_qty;
+        quantity += node->order.leaves_qty;
       }
     }
   } else {
     for (const auto price : bid_prices_) {
       if (!crosses(price)) break;
       const auto &level = levels_[*priceIndex(price)];
-      for (const auto &order : level.orders) {
-        if (std::numeric_limits<simex::common::Qty>::max() - quantity < order.leaves_qty) {
+      for (auto *node = level.head; node != nullptr; node = node->next) {
+        if (std::numeric_limits<simex::common::Qty>::max() - quantity < node->order.leaves_qty) {
           return std::numeric_limits<simex::common::Qty>::max();
         }
-        quantity += order.leaves_qty;
+        quantity += node->order.leaves_qty;
       }
     }
   }
@@ -171,14 +203,14 @@ auto MEOrderBook::match(simex::common::Side aggressive_side, simex::common::Orde
     if (!crosses(passive_price)) break;
 
     auto &level = levels_[*priceIndex(passive_price)];
-    auto iterator = level.orders.begin();
-    const auto fill_qty = std::min(result.leaves_qty, iterator->leaves_qty);
-    PassiveFill fill{*iterator, fill_qty, fill_qty == iterator->leaves_qty};
+    auto *node = level.head;
+    const auto fill_qty = std::min(result.leaves_qty, node->order.leaves_qty);
+    PassiveFill fill{node->order, fill_qty, fill_qty == node->order.leaves_qty};
     result.leaves_qty -= fill_qty;
 
-    iterator->leaves_qty -= fill_qty;
-    if (iterator->leaves_qty == 0) {
-      removeIterator(passive_price, iterator);
+    node->order.leaves_qty -= fill_qty;
+    if (node->order.leaves_qty == 0) {
+      removeNode(passive_price, node);
     }
     result.fills.push_back(std::move(fill));
   }
@@ -189,17 +221,31 @@ auto MEOrderBook::snapshot() const -> std::vector<RestingOrder> {
   std::vector<RestingOrder> result;
   for (const auto price : bid_prices_) {
     const auto &level = levels_[*priceIndex(price)];
-    result.insert(result.end(), level.orders.begin(), level.orders.end());
+    for (auto *node = level.head; node != nullptr; node = node->next) {
+      result.push_back(node->order);
+    }
   }
   for (const auto price : ask_prices_) {
     const auto &level = levels_[*priceIndex(price)];
-    result.insert(result.end(), level.orders.begin(), level.orders.end());
+    for (auto *node = level.head; node != nullptr; node = node->next) {
+      result.push_back(node->order);
+    }
   }
   return result;
 }
 
 auto MEOrderBook::drain() -> std::vector<RestingOrder> {
   auto result = snapshot();
+  for (auto &level : levels_) {
+    auto *node = level.head;
+    while (node != nullptr) {
+      auto *next = node->next;
+      orders_pool_.deallocate(node);
+      node = next;
+    }
+    level.head = nullptr;
+    level.tail = nullptr;
+  }
   levels_.assign(config_.max_price_levels, PriceLevel{});
   bid_prices_.clear();
   ask_prices_.clear();
