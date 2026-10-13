@@ -134,75 +134,75 @@ if(BUILD_TESTING)
   # assertions active in Release test builds until they are made side-effect free.
   add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,GNU,Clang>:-UNDEBUG>)
 
-  add_executable(test_virtual_clock src/tests/test_virtual_clock.cpp)
+  add_executable(test_virtual_clock tests/unit/test_virtual_clock.cpp)
   target_link_libraries(test_virtual_clock PRIVATE simex_common)
   add_test(NAME virtual_clock COMMAND test_virtual_clock)
 
-  add_executable(test_config src/tests/test_config.cpp)
+  add_executable(test_config tests/unit/test_config.cpp)
   target_link_libraries(test_config PRIVATE simex_common)
   add_test(NAME config COMMAND test_config ${CMAKE_CURRENT_SOURCE_DIR}/simex.json)
 
-  add_executable(test_session_calendar src/tests/test_session_calendar.cpp)
+  add_executable(test_session_calendar tests/component/test_session_calendar.cpp)
   target_link_libraries(test_session_calendar PRIVATE simex_exchange)
   add_test(NAME session_calendar COMMAND test_session_calendar)
 
-  add_executable(test_front_clearing src/tests/test_front_clearing.cpp)
+  add_executable(test_front_clearing tests/unit/test_front_clearing.cpp)
   target_link_libraries(test_front_clearing PRIVATE simex_exchange)
   add_test(NAME front_clearing COMMAND test_front_clearing)
 
-  add_executable(test_matching_engine src/tests/test_matching_engine.cpp)
+  add_executable(test_matching_engine tests/component/test_matching_engine.cpp)
   target_link_libraries(test_matching_engine PRIVATE simex_exchange)
   add_test(NAME matching_engine COMMAND test_matching_engine)
 
-  add_executable(test_call_auction src/tests/test_call_auction.cpp)
+  add_executable(test_call_auction tests/component/test_call_auction.cpp)
   target_link_libraries(test_call_auction PRIVATE simex_exchange)
   add_test(NAME call_auction COMMAND test_call_auction)
 
-  add_executable(test_market_data src/tests/test_market_data.cpp)
+  add_executable(test_market_data tests/component/test_market_data.cpp)
   target_link_libraries(test_market_data PRIVATE simex_exchange)
   add_test(NAME market_data COMMAND test_market_data)
 
-  add_executable(test_participant_harness src/tests/test_participant_harness.cpp)
+  add_executable(test_participant_harness tests/component/test_participant_harness.cpp)
   target_link_libraries(test_participant_harness PRIVATE simex_harness)
   add_test(NAME participant_harness COMMAND test_participant_harness)
 
-  add_executable(test_trace src/tests/test_trace.cpp)
+  add_executable(test_trace tests/unit/test_trace.cpp)
   target_link_libraries(test_trace PRIVATE simex_trace)
   add_test(NAME trace COMMAND test_trace)
 
-  add_executable(test_exchange_runtime src/tests/test_exchange_runtime.cpp)
+  add_executable(test_exchange_runtime tests/integration/test_exchange_runtime.cpp)
   target_link_libraries(test_exchange_runtime PRIVATE simex_runtime)
   add_test(NAME exchange_runtime COMMAND test_exchange_runtime)
 
-  add_executable(test_participant_runtime src/tests/test_participant_runtime.cpp)
+  add_executable(test_participant_runtime tests/integration/test_participant_runtime.cpp)
   target_link_libraries(test_participant_runtime PRIVATE simex_runtime)
   add_test(NAME participant_runtime COMMAND test_participant_runtime)
 
-  add_executable(test_participant_simulator src/tests/test_participant_simulator.cpp)
+  add_executable(test_participant_simulator tests/unit/test_participant_simulator.cpp)
   target_link_libraries(test_participant_simulator PRIVATE simex_participant)
   add_test(NAME participant_simulator COMMAND test_participant_simulator)
 
-  add_executable(test_transport src/tests/test_transport.cpp)
+  add_executable(test_transport tests/integration/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE simex_transport)
   add_test(NAME transport COMMAND test_transport)
 
   if(UNIX)
-    add_executable(test_participant_client src/tests/test_participant_client.cpp)
+    add_executable(test_participant_client tests/integration/test_participant_client.cpp)
     target_link_libraries(test_participant_client PRIVATE simex_participant_client)
     add_test(NAME participant_client COMMAND test_participant_client)
   endif()
 endif()
 
 if(BUILD_TESTING)
-  add_executable(test_exchange_service src/tests/test_exchange_service.cpp)
+  add_executable(test_exchange_service tests/integration/test_exchange_service.cpp)
   target_link_libraries(test_exchange_service PRIVATE simex_transport)
   add_test(NAME exchange_service COMMAND test_exchange_service)
 endif()
 
 if(UNIX AND BUILD_TESTING)
-  add_executable(test_tui_observer src/tests/test_tui_observer.cpp)
+  add_executable(test_tui_observer tests/integration/test_tui_observer.cpp)
   target_link_libraries(test_tui_observer PRIVATE simex_tui_core)
   add_test(NAME tui_observer COMMAND test_tui_observer)
-  add_test(NAME tui_e2e COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/tui_e2e.sh
+  add_test(NAME tui_e2e COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/tests/integration/tui_e2e.sh
            $<TARGET_FILE:simex_server> $<TARGET_FILE:simex_tui> ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
