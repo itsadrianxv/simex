@@ -1,6 +1,7 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
+#include <thread>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -62,8 +63,15 @@ int main() {
   assert(response.header.sequence == 1);
   assert(response.response.type == simex::common::ResponseType::CANCELED);
   assert(response.response.reason == simex::common::ReasonCode::SESSION_END);
-  const auto before = std::chrono::steady_clock::now();
-  service.stop();  // Must unblock even though the participant socket is still open.
-  assert(std::chrono::steady_clock::now() - before < std::chrono::seconds(1));
+  // A participant that closes its socket mid-session must surface as a
+  // session end without hanging the gateway.
   ::close(fd);
+  const auto closed_at = std::chrono::steady_clock::now();
+  while (!service.sessionEnded()) {
+    assert(std::chrono::steady_clock::now() - closed_at < std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  const auto before = std::chrono::steady_clock::now();
+  service.stop();  // Must unblock promptly even after the abrupt peer close.
+  assert(std::chrono::steady_clock::now() - before < std::chrono::seconds(1));
 }

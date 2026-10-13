@@ -88,6 +88,8 @@ target_compile_features(simex_runtime PUBLIC cxx_std_20)
 target_link_libraries(simex_runtime PUBLIC simex_warnings)
 
 add_library(simex_transport STATIC
+  src/transport/tcp_socket.cpp
+  src/transport/tcp_server.cpp
   src/transport/tcp_order_gateway.cpp
   src/transport/udp_market_data_publisher.cpp
   src/transport/exchange_service.cpp
@@ -185,6 +187,10 @@ if(BUILD_TESTING)
   add_executable(test_transport src/tests/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE simex_transport)
   add_test(NAME transport COMMAND test_transport)
+
+  add_executable(test_tcp_server src/tests/test_tcp_server.cpp)
+  target_link_libraries(test_tcp_server PRIVATE simex_transport)
+  add_test(NAME tcp_server COMMAND test_tcp_server)
 
   if(UNIX)
     add_executable(test_participant_client src/tests/test_participant_client.cpp)
